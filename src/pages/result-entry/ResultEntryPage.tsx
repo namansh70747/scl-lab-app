@@ -1,21 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getPatientById, getBill } from "@/lib/queries/patients";
-import { getOrdersWithResults, saveResult, approvePatient, markNotDone } from "@/lib/queries/results";
+import { getPatientById } from "@/lib/queries/patients";
+import { getOrdersWithResults, saveResult, approvePatient, markNotDone, unlockResult, getReportComment, saveReportComment } from "@/lib/queries/results";
 import { listPanels } from "@/lib/queries/tests";
 import { useSession } from "@/lib/session";
 import { OrderWithResult, Panel } from "@/types";
 import { computeCalculated } from "@/lib/calc";
-import { computeFlag, patientAgeDays } from "@/lib/flags";
+import { computeFlag, patientAgeDays, findRange, displayRange } from "@/lib/flags";
 import { cn } from "@/lib/utils";
-import { CheckCircle, ChevronLeft, ChevronRight, FileText, AlertTriangle } from "lucide-react";
+import { Check, CheckCircle, ChevronLeft, FileText, Unlock, X } from "lucide-react";
 
 export function ResultEntryPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const pid = parseInt(patientId ?? '0');
   const navigate = useNavigate();
   const user = useSession(s => s.user);
+  const can = useSession(s => s.can);
   const qc = useQueryClient();
   const [showApprove, setShowApprove] = useState(false);
   const [comment, setComment] = useState('');
@@ -24,6 +25,7 @@ export function ResultEntryPage() {
   const { data: patient } = useQuery({ queryKey: ['patient', pid], queryFn: () => getPatientById(pid) });
   const { data: orders = [] } = useQuery({ queryKey: ['orders', pid], queryFn: () => getOrdersWithResults(pid) });
   const { data: panels = [] } = useQuery({ queryKey: ['panels'], queryFn: listPanels });
+  const { data: savedComment } = useQuery({ queryKey: ['comment', pid], queryFn: () => getReportComment(pid) });
 
   // Init local values from saved results
   useEffect(() => {
@@ -35,11 +37,14 @@ export function ResultEntryPage() {
     setLocalValues(init);
   }, [orders]);
 
+  useEffect(() => { if (savedComment != null) setComment(savedComment); }, [savedComment]);
+
   const isApproved = orders.length > 0 && orders.every(o => o.order.not_done || o.result?.approved_at);
 
-  // Group orders by panel
+  // Group orders by panel (bundle rows are billing artifacts — never shown here)
+  const visibleOrders = orders.filter(o => !o.test.is_panel);
   const panelMap: Record<string, { panel: Panel; orders: OrderWithResult[] }> = {};
-  for (const o of orders) {
+  for (const o of visibleOrders) {
     const panelCode = o.test.panel_code ?? 'MISC';
     if (!panelMap[panelCode]) {
       const p = panels.find(p => p.code === panelCode);
@@ -80,14 +85,63 @@ export function ResultEntryPage() {
   });
 
   const approveMut = useMutation({
-    mutationFn: () => approvePatient(pid, user!.id),
+    mutationFn: async () => {
+      // Flush EVERY value first — including pre-filled defaults the user never
+      // touched and a snapshot of calculated values — so approval locks exactly
+      // what is on screen (patient-safety: report can never differ from entry).
+      for (const o of orders) {
+        if (o.order.not_done || o.test.is_panel) continue;
+        const value = getDisplayValue(o);
+        if (!value.trim()) continue;
+        if (o.result?.value === value && o.result?.approved_at) continue;
+        if (o.result?.value !== value || !o.result) {
+          await saveResult(o.order.id, value, getFlag(o), user!.id);
+        }
+      }
+      await saveReportComment(pid, comment);
+      await approvePatient(pid, user!.id);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders', pid] });
       qc.invalidateQueries({ queryKey: ['patient', pid] });
+      qc.invalidateQueries({ queryKey: ['comment', pid] });
       setShowApprove(false);
       navigate(`/report/${pid}`);
     },
+    onError: (e) => alert(String(e)),
   });
+
+  const unlockMut = useMutation({
+    mutationFn: async () => {
+      const reason = window.prompt('Reason for unlocking this approved report (audit-logged):');
+      if (!reason) throw new Error('cancelled');
+      for (const o of orders) {
+        if (o.result?.approved_at) await unlockResult(o.order.id, reason, user!.id);
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['orders', pid] });
+      qc.invalidateQueries({ queryKey: ['patient', pid] });
+    },
+    onError: (e) => { if (String(e).includes('cancelled')) return; alert(String(e)); },
+  });
+
+  // F9 = approve (only when not already approved)
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === 'F9' && !isApproved && allHaveValues) { e.preventDefault(); setShowApprove(true); }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  });
+
+  // Esc closes the approve dialog (per DESIGN.md dialog spec)
+  useEffect(() => {
+    if (!showApprove) return;
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowApprove(false); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [showApprove]);
 
   const handleBlur = (o: OrderWithResult) => {
     if (o.test.result_type === 'calculated') return;
@@ -97,51 +151,74 @@ export function ResultEntryPage() {
     saveMut.mutate({ orderId: o.order.id, value, flag });
   };
 
-  const allHaveValues = orders.filter(o => !o.order.not_done).every(o => {
+  const activeOrders = visibleOrders.filter(o => !o.order.not_done);
+  const allHaveValues = activeOrders.every(o => {
     if (o.test.result_type === 'calculated') return true;
     return (localValues[o.order.id] ?? '').trim() !== '';
   });
 
-  const progress = orders.filter(o => !o.order.not_done && (localValues[o.order.id] || o.test.result_type === 'calculated')).length;
-  const total = orders.filter(o => !o.order.not_done).length;
+  const progress = activeOrders.filter(o => localValues[o.order.id] || o.test.result_type === 'calculated').length;
+  const total = activeOrders.length;
+  const notDoneOrders = orders.filter(o => o.order.not_done && !o.test.is_panel);
 
   return (
     <div className="space-y-4">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 -mx-6 px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-600">
-              <ChevronLeft size={20} />
+      {/* Sticky header strip */}
+      <div className="sticky top-0 z-10 -mx-6 px-6 py-3 bg-[#f8f7f5]/95 backdrop-blur border-b border-[#e7e5e1]">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <button onClick={() => navigate(-1)} className="btn btn-ghost !px-1.5 shrink-0" title="Back">
+              <ChevronLeft size={17} strokeWidth={1.8} />
             </button>
             {patient && (
-              <div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm text-gray-500">#{patient.test_no}</span>
-                  <span className="font-semibold text-gray-900">{patient.title} {patient.name}</span>
-                  <span className="text-sm text-gray-500">{patient.age} {patient.age_unit} / {patient.sex === 'MALE' ? 'M' : 'F'}</span>
-                  {patient.doctor_name && <span className="text-xs text-gray-400">Ref: {patient.doctor_name}</span>}
+              <div className="min-w-0">
+                <div className="flex items-baseline gap-2.5 min-w-0">
+                  <span className="font-mono text-[12.5px] text-[#8a857d] shrink-0">#{patient.test_no}</span>
+                  <span className="font-semibold text-[15px] text-[#1a1a1e] truncate">{patient.title} {patient.name}</span>
+                  <span className="text-[12.5px] text-[#5d5953] shrink-0">
+                    {patient.age} {patient.age_unit} / {patient.sex === 'MALE' ? 'M' : 'F'}
+                  </span>
+                  {patient.doctor_name && (
+                    <span className="text-[12.5px] text-[#8a857d] truncate">Ref: {patient.doctor_name}</span>
+                  )}
                 </div>
-                {/* Progress bar */}
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="w-32 h-1.5 bg-gray-200 rounded-full">
-                    <div className="h-1.5 bg-green-500 rounded-full transition-all" style={{ width: `${total > 0 ? (progress / total) * 100 : 0}%` }} />
+                <div className="flex items-center gap-2.5 mt-1.5">
+                  <div className="w-36 h-[2px] rounded-full bg-[#e7e5e1] overflow-hidden">
+                    <div
+                      className="h-full bg-maroon-600 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${total > 0 ? (progress / total) * 100 : 0}%` }}
+                    />
                   </div>
-                  <span className="text-xs text-gray-500">{progress}/{total} entered</span>
+                  <span className="text-[11px] text-[#8a857d] tabular-nums">{progress}/{total} entered</span>
                 </div>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 shrink-0">
             {isApproved ? (
-              <button onClick={() => navigate(`/report/${pid}`)}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
-                <FileText size={15} /> View Report
-              </button>
+              <>
+                {can('unlock_results') && (
+                  <button
+                    onClick={() => unlockMut.mutate()}
+                    disabled={unlockMut.isPending}
+                    className="btn btn-secondary !text-[#92600a] !border-[#eedcb3] hover:!bg-[#fdf6e3]"
+                  >
+                    <Unlock size={15} strokeWidth={1.8} /> Unlock
+                  </button>
+                )}
+                <button onClick={() => navigate(`/report/${pid}`)} className="btn btn-primary">
+                  <FileText size={15} strokeWidth={1.8} /> View Report
+                </button>
+              </>
             ) : (
-              <button onClick={() => setShowApprove(true)} disabled={!allHaveValues}
-                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed">
-                <CheckCircle size={15} /> Approve (F9)
+              <button
+                onClick={() => setShowApprove(true)}
+                disabled={!allHaveValues}
+                title={!allHaveValues ? 'Enter all results, or mark missing tests "not done"' : undefined}
+                className="btn btn-success"
+              >
+                <CheckCircle size={15} strokeWidth={1.8} /> Approve
+                <kbd className="text-[10px] font-semibold bg-white/20 rounded px-1.5 py-0.5">F9</kbd>
               </button>
             )}
           </div>
@@ -150,19 +227,19 @@ export function ResultEntryPage() {
 
       {/* Panel sections */}
       {sortedPanels.map(({ panel, orders: panelOrders }) => (
-        <div key={panel.code} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="bg-gray-50 px-6 py-3 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-800 text-sm uppercase tracking-wide">{panel.report_heading}</h2>
+        <div key={panel.code} className="card overflow-hidden animate-fade-up">
+          <div className="px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d] bg-[#faf9f7] border-b border-[#f1efec]">
+            {panel.report_heading}
           </div>
           <table className="w-full">
             <thead>
-              <tr className="text-xs font-medium text-gray-500 border-b border-gray-100">
-                <th className="px-6 py-2 text-left w-64">Test Name</th>
-                <th className="px-6 py-2 text-left w-48">Result</th>
-                <th className="px-6 py-2 text-left w-24">Unit</th>
-                <th className="px-6 py-2 text-left">Normal Range</th>
-                <th className="px-6 py-2 text-left w-16">Flag</th>
-                <th className="px-6 py-2 w-16" />
+              <tr className="border-b border-[#f1efec]">
+                <th className="px-5 py-3 text-left table-head">Test Name</th>
+                <th className="px-5 py-3 text-left table-head w-44">Result</th>
+                <th className="px-5 py-3 text-left table-head w-24">Unit</th>
+                <th className="px-5 py-3 text-left table-head">Normal Range</th>
+                <th className="px-5 py-3 text-left table-head w-20">Flag</th>
+                <th className="px-5 py-3 w-12" />
               </tr>
             </thead>
             <tbody>
@@ -171,20 +248,32 @@ export function ResultEntryPage() {
                 const isCalc = o.test.result_type === 'calculated';
                 const displayVal = getDisplayValue(o);
                 const approved = !!o.result?.approved_at;
-                const range = o.ranges[0];
+                const range = patient ? findRange(o.ranges, patient.sex, patientAgeDays(patient.age, patient.age_unit)) : o.ranges[0];
 
                 return (
-                  <tr key={o.order.id} className={cn("border-b border-gray-50 last:border-0",
-                    o.order.not_done && "opacity-40",
-                    flag && "bg-red-50"
-                  )}>
-                    <td className="px-6 py-2.5 text-sm text-gray-900">{o.test.name}</td>
-                    <td className="px-6 py-2.5">
+                  <tr
+                    key={o.order.id}
+                    className={cn(
+                      "group border-b border-[#f6f5f3] last:border-0 transition-colors",
+                      o.order.not_done ? "opacity-40" : "hover:bg-[#faf9f7]",
+                      flag && !o.order.not_done && "bg-[#fdf6f6]"
+                    )}
+                  >
+                    <td className="px-5 py-2.5 text-[15px] text-[#1a1a1e]">{o.test.name}</td>
+                    <td className="px-5 py-2.5">
                       {o.order.not_done ? (
-                        <span className="text-xs text-gray-400 italic">Not done</span>
+                        <span className="text-[12px] text-[#a8a29b] italic">Not done</span>
                       ) : isCalc ? (
-                        <span className={cn("text-sm font-mono tabular-nums", flag === 'H' && "text-red-600 font-bold", flag === 'L' && "text-blue-600 font-bold")}>
-                          {displayVal || '—'}
+                        <span className="inline-flex w-32 items-center justify-end gap-1.5">
+                          <span className={cn(
+                            "text-[14px] tabular-nums text-right",
+                            flag === 'H' && "text-[#b91c1c] font-semibold",
+                            flag === 'L' && "text-[#1d4ed8] font-semibold",
+                            !flag && "text-[#1a1a1e]"
+                          )}>
+                            {displayVal || '—'}
+                          </span>
+                          <span className="chip chip-gray !px-1.5 !py-0 !text-[10px]">auto</span>
                         </span>
                       ) : o.test.result_type === 'choice' ? (
                         <select
@@ -192,10 +281,11 @@ export function ResultEntryPage() {
                           onChange={e => setLocalValues(prev => ({ ...prev, [o.order.id]: e.target.value }))}
                           onBlur={() => handleBlur(o)}
                           disabled={approved}
-                          className={cn("px-2 py-1 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-maroon-500",
-                            flag ? "border-red-300 bg-red-50" : "border-gray-200",
-                            approved && "bg-gray-50 cursor-not-allowed"
-                          )}>
+                          className={cn(
+                            "field !w-36 !py-1.5 text-[13.5px]",
+                            flag && "!border-[#fca5a5] !text-[#b91c1c] font-semibold"
+                          )}
+                        >
                           <option value="">—</option>
                           {(JSON.parse(o.test.choices ?? '[]') as string[]).map(c => (
                             <option key={c} value={c}>{c}</option>
@@ -208,35 +298,40 @@ export function ResultEntryPage() {
                           onChange={e => setLocalValues(prev => ({ ...prev, [o.order.id]: e.target.value }))}
                           onBlur={() => handleBlur(o)}
                           disabled={approved}
-                          className={cn("px-2 py-1 border rounded text-sm tabular-nums w-32 focus:outline-none focus:ring-1 focus:ring-maroon-500",
-                            flag === 'H' && "border-red-400 bg-red-50 font-bold text-red-700",
-                            flag === 'L' && "border-blue-400 bg-blue-50 font-bold text-blue-700",
-                            !flag && "border-gray-200",
-                            approved && "bg-gray-50 cursor-not-allowed"
+                          className={cn(
+                            "field !w-32 !py-1.5 text-right tabular-nums text-[14px]",
+                            flag === 'H' && "!border-[#fca5a5] !text-[#b91c1c] font-semibold",
+                            flag === 'L' && "!border-[#93c5fd] !text-[#1d4ed8] font-semibold"
                           )}
                         />
                       )}
                     </td>
-                    <td className="px-6 py-2.5 text-xs text-gray-500">{o.test.unit}</td>
-                    <td className="px-6 py-2.5 text-xs text-gray-500">
-                      {range?.band_text ? (
-                        <span className="text-xs text-gray-400 italic">{range.band_text.split(' / ')[0]}</span>
-                      ) : range?.range_text ?? ''}
+                    <td className="px-5 py-2.5 text-[12.5px] text-[#8a857d]">{o.test.unit}</td>
+                    <td className="px-5 py-2.5 text-[12.5px] text-[#8a857d] tabular-nums">
+                      {displayRange(range) || (range?.band_text ? <span className="italic">{range.band_text.split(' / ')[0]}</span> : '')}
                     </td>
-                    <td className="px-6 py-2.5">
-                      {flag && (
-                        <span className={cn("px-1.5 py-0.5 rounded text-xs font-bold",
-                          flag === 'H' && "bg-red-100 text-red-700",
-                          flag === 'L' && "bg-blue-100 text-blue-700",
-                          flag === 'A' && "bg-amber-100 text-amber-700"
-                        )}>{flag}</span>
-                      )}
-                      {approved && <span className="ml-1 text-green-500" title="Approved">✓</span>}
+                    <td className="px-5 py-2.5">
+                      <span className="inline-flex items-center gap-1.5">
+                        {flag && (
+                          <span className={cn(
+                            "chip",
+                            flag === 'H' && "chip-red",
+                            flag === 'L' && "chip-blue",
+                            flag === 'A' && "chip-amber"
+                          )}>{flag}</span>
+                        )}
+                        {approved && <Check size={14} strokeWidth={2.2} className="text-[#14743a]" aria-label="Approved" />}
+                      </span>
                     </td>
-                    <td className="px-6 py-2.5 text-right">
+                    <td className="px-5 py-2.5 text-right">
                       {!o.order.not_done && (
-                        <button onClick={() => markNotDone(o.order.id).then(() => qc.invalidateQueries({ queryKey: ['orders', pid] }))}
-                          className="text-xs text-gray-300 hover:text-gray-500" title="Mark not done">✕</button>
+                        <button
+                          onClick={() => markNotDone(o.order.id).then(() => qc.invalidateQueries({ queryKey: ['orders', pid] }))}
+                          className="text-[#a8a29b] opacity-0 group-hover:opacity-100 transition-opacity hover:text-[#b91c1c]"
+                          title="Mark not done"
+                        >
+                          <X size={14} strokeWidth={1.8} />
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -248,22 +343,48 @@ export function ResultEntryPage() {
       ))}
 
       {/* Comments */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Comments (printed on report)</label>
-        <textarea value={comment} onChange={e => setComment(e.target.value)} rows={3} placeholder="Optional comments for the report…"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-maroon-500" />
+      <div className="card p-5">
+        <label className="block text-[12.5px] font-medium text-[#5d5953] mb-1.5">Comments (printed on report)</label>
+        <textarea
+          value={comment}
+          onChange={e => setComment(e.target.value)}
+          onBlur={() => saveReportComment(pid, comment).then(() => qc.invalidateQueries({ queryKey: ['comment', pid] }))}
+          rows={3}
+          placeholder="Optional comments for the report…"
+          className="field resize-y"
+        />
       </div>
 
-      {/* Approve modal */}
+      {/* Approve confirm dialog */}
       {showApprove && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
-            <h3 className="font-semibold text-gray-900 mb-2">Approve Report?</h3>
-            <p className="text-sm text-gray-600 mb-4">Once approved, results will be locked and the report will be ready to print and deliver.</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setShowApprove(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-              <button onClick={() => approveMut.mutate()} disabled={approveMut.isPending}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-60">
+        <div
+          className="fixed inset-0 z-50 bg-[#1a1208]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
+          onClick={() => setShowApprove(false)}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-md p-6 animate-scale-in shadow-[var(--shadow-pop)]"
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <h3 className="text-[16px] font-semibold text-[#1a1a1e] mb-2">Approve report?</h3>
+            <p className="text-[13.5px] text-[#5d5953] leading-relaxed mb-3">
+              <span className="tabular-nums">{total}</span> test{total !== 1 ? 's' : ''} entered. Once approved, results are{' '}
+              <strong className="text-[#1a1a1e]">locked</strong> (only an Admin can unlock) and the report is ready to print &amp; deliver.
+            </p>
+            {notDoneOrders.length > 0 && (
+              <div className="rounded-xl bg-[#faf9f7] border border-[#f1efec] px-3.5 py-2.5 mb-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d] mb-1.5">Excluded — not done</p>
+                <ul className="space-y-0.5">
+                  {notDoneOrders.map(o => (
+                    <li key={o.order.id} className="text-[12.5px] text-[#5d5953]">{o.test.name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="flex gap-2.5 justify-end mt-5">
+              <button onClick={() => setShowApprove(false)} className="btn btn-secondary">Cancel</button>
+              <button onClick={() => approveMut.mutate()} disabled={approveMut.isPending} className="btn btn-success">
                 {approveMut.isPending ? 'Approving…' : 'Approve & View Report'}
               </button>
             </div>
