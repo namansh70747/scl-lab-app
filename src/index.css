@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  /* SCL brand colors */
+  --color-maroon-50: #fdf2f2;
+  --color-maroon-100: #fce4e4;
+  --color-maroon-600: #7b1b1b;
+  --color-maroon-700: #6a1717;
+
+  /* Semantic design tokens */
+  --color-background: #ffffff;
+  --color-foreground: #111827;
+  --color-border: #e5e7eb;
+  --color-input: #e5e7eb;
+  --color-ring: #7b1b1b;
+  --color-primary: #7b1b1b;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f3f4f6;
+  --color-secondary-foreground: #111827;
+  --color-muted: #f9fafb;
+  --color-muted-foreground: #6b7280;
+  --color-accent: #f3f4f6;
+  --color-accent-foreground: #111827;
+  --color-destructive: #b91c1c;
+  --color-destructive-foreground: #ffffff;
+  --color-card: #ffffff;
+  --color-card-foreground: #111827;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #111827;
+
+  --radius: 0.625rem;
+}
+
+@layer base {
+  * {
+    border-color: #e5e7eb;
+  }
+
+  body {
+    background-color: #f9fafb;
+    color: #111827;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@utility tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Print styles */
+@media print {
+  body > *:not(#report-print-area) {
+    display: none !important;
+  }
+  #report-print-area {
+    display: block !important;
+  }
+  body {
+    background: white;
+    margin: 0;
+    padding: 0;
+  }
+}
