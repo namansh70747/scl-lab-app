@@ -1,5 +1,7 @@
 import { dbQuery, dbExecute } from '@/lib/db';
 import { Test, TestRange, Panel } from '@/types';
+import { assertCan, currentUserId } from '@/lib/session';
+import { writeAudit } from './audit';
 
 export async function listPanels(): Promise<Panel[]> {
   return dbQuery<Panel>('SELECT * FROM panels ORDER BY sort_order');
@@ -41,6 +43,7 @@ export async function getTestsByPanel(): Promise<Record<string, Test[]>> {
 }
 
 export async function upsertTest(test: Partial<Test> & { code: string; name: string }): Promise<void> {
+  assertCan('edit_tests');
   await dbExecute(
     `INSERT INTO tests(code,name,panel_id,result_type,unit,decimals,price,enabled,sort_order,choices,default_value,formula,interpretation_note,is_panel,needs_review)
      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -60,23 +63,37 @@ export async function upsertTest(test: Partial<Test> & { code: string; name: str
 }
 
 export async function updateTestPrice(testId: number, price: number): Promise<void> {
+  assertCan('edit_prices');
+  const before = await dbQuery<{ price: number }>('SELECT price FROM tests WHERE id=?', [testId]);
   await dbExecute('UPDATE tests SET price=?,updated_at=CURRENT_TIMESTAMP WHERE id=?', [price, testId]);
+  await writeAudit(currentUserId(), 'test.price', 'tests', testId, { price: before[0]?.price }, { price });
 }
 
 export async function setTestEnabled(testId: number, enabled: number): Promise<void> {
+  assertCan('edit_tests');
   await dbExecute('UPDATE tests SET enabled=?,updated_at=CURRENT_TIMESTAMP WHERE id=?', [enabled, testId]);
+  await writeAudit(currentUserId(), 'test.enabled', 'tests', testId, null, { enabled });
+}
+
+export async function setInterpretation(testId: number, note: string): Promise<void> {
+  assertCan('edit_tests');
+  await dbExecute('UPDATE tests SET interpretation_note=?,updated_at=CURRENT_TIMESTAMP WHERE id=?', [note, testId]);
+  await writeAudit(currentUserId(), 'test.interpretation', 'tests', testId, null, { note });
 }
 
 export async function upsertRange(range: Omit<TestRange, 'id' | 'created_at'>): Promise<void> {
+  assertCan('edit_ranges');
   await dbExecute(
     `INSERT INTO test_ranges(test_id,sex,age_min_days,age_max_days,low,high,range_text,band_text)
-     VALUES(?,?,?,?,?,?,?,?)
-     ON CONFLICT DO NOTHING`,
+     VALUES(?,?,?,?,?,?,?,?)`,
     [range.test_id, range.sex, range.age_min_days, range.age_max_days,
      range.low ?? null, range.high ?? null, range.range_text ?? null, range.band_text ?? null]
   );
+  await writeAudit(currentUserId(), 'range.create', 'test_ranges', range.test_id, null, range);
 }
 
 export async function deleteRange(id: number): Promise<void> {
+  assertCan('edit_ranges');
   await dbExecute('DELETE FROM test_ranges WHERE id=?', [id]);
+  await writeAudit(currentUserId(), 'range.delete', 'test_ranges', id, null, null);
 }
