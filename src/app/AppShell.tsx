@@ -1,111 +1,180 @@
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useSession } from "@/lib/session";
 import {
   LayoutDashboard, UserPlus, Users, FlaskConical, Stethoscope,
-  BarChart2, Settings, LogOut, ChevronLeft, Menu
+  BarChart3, Settings, LogOut, ChevronLeft, Menu, Search,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { CommandPalette } from "@/app/CommandPalette";
+import { KeyboardShortcuts } from "@/app/KeyboardShortcuts";
+import { maybeDailyBackup } from "@/lib/backup";
+import { SCLRoundel } from "@/components/common/SCLLogo";
 
 const navItems = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", shortcut: "g d" },
-  { to: "/new-patient", icon: UserPlus, label: "New Patient", shortcut: "g n", primary: true },
-  { to: "/patients", icon: Users, label: "Patients", shortcut: "g p" },
-  { to: "/test-master", icon: FlaskConical, label: "Test Master", shortcut: "g t" },
-  { to: "/doctors", icon: Stethoscope, label: "Doctors", shortcut: "g r" },
-  { to: "/reports", icon: BarChart2, label: "Reports", shortcut: "g b" },
-  { to: "/settings", icon: Settings, label: "Settings", shortcut: "g s" },
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", key: "D" },
+  { to: "/new-patient", icon: UserPlus, label: "New Patient", key: "N", primary: true },
+  { to: "/patients", icon: Users, label: "Patients", key: "P" },
+  { to: "/test-master", icon: FlaskConical, label: "Test Master", key: "T", adminOnly: true },
+  { to: "/doctors", icon: Stethoscope, label: "Doctors", key: "R" },
+  { to: "/reports", icon: BarChart3, label: "Reports", key: "B" },
+  { to: "/settings", icon: Settings, label: "Settings", key: "S", adminOnly: true },
 ];
+
+const PAGE_TITLES: Record<string, string> = {
+  "/dashboard": "Dashboard", "/new-patient": "New Patient", "/patients": "Patients",
+  "/test-master": "Test Master", "/doctors": "Doctors", "/reports": "Reports", "/settings": "Settings",
+};
 
 export function AppShell() {
   const { user, logout } = useSession();
   const navigate = useNavigate();
+  const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [online, setOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const on = () => setOnline(true), off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    void maybeDailyBackup();
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Sidebar */}
+    <div className="flex h-screen overflow-hidden bg-[#f8f7f5]">
+      <KeyboardShortcuts onOpenPalette={() => setPaletteOpen(true)} />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+
+      {/* ───────── Sidebar — deep SCL maroon, the brand anchor ───────── */}
       <aside
         className={cn(
-          "flex flex-col bg-white border-r border-gray-200 transition-all duration-200 shrink-0",
-          collapsed ? "w-16" : "w-60"
+          "relative flex flex-col shrink-0 transition-[width] duration-200 ease-out",
+          collapsed ? "w-[68px]" : "w-[232px]"
         )}
+        style={{ background: "linear-gradient(180deg, #2b0e0e 0%, #240c0c 55%, #1d0909 100%)" }}
       >
-        {/* Logo area */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-200">
+        {/* brand */}
+        <div className={cn("flex items-center gap-3 h-[60px] px-4", collapsed && "justify-center px-0")}>
+          <SCLRoundel size={32} />
           {!collapsed && (
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-maroon-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                SCL
-              </div>
-              <span className="text-sm font-semibold text-gray-900 truncate">SCL Lab</span>
+            <div className="min-w-0 leading-tight">
+              <p className="text-[13px] font-bold text-white/95 truncate tracking-wide">Sharma Clinical</p>
+              <p className="text-[10.5px] text-white/45 font-medium tracking-[0.14em] uppercase">Laboratory</p>
             </div>
           )}
-          <button
-            onClick={() => setCollapsed(c => !c)}
-            className="ml-auto p-1.5 rounded hover:bg-gray-100 text-gray-500"
-          >
-            {collapsed ? <Menu size={16} /> : <ChevronLeft size={16} />}
-          </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
-          {navItems.map(item => (
+        <div className="mx-4 h-px bg-white/[0.08]" />
+
+        {/* nav */}
+        <nav className="flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
+          {navItems.filter(i => !i.adminOnly || user?.role === "admin").map(item => (
             <NavLink
               key={item.to}
               to={item.to}
-              className={({ isActive }) => cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-maroon-50 text-maroon-700 border-l-2 border-maroon-600 ml-[-2px]"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
-                item.primary && !isActive && "bg-maroon-600 text-white hover:bg-maroon-700"
-              )}
               title={collapsed ? item.label : undefined}
+              className={({ isActive }) => cn(
+                "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors duration-100",
+                collapsed && "justify-center px-0",
+                isActive
+                  ? "bg-white/[0.1] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                  : "text-white/55 hover:text-white/90 hover:bg-white/[0.05]"
+              )}
             >
-              <item.icon size={18} className="shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              {({ isActive }) => (
+                <>
+                  {/* active indicator bar */}
+                  <span className={cn(
+                    "absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[#e8b4b4] transition-opacity",
+                    isActive ? "opacity-100" : "opacity-0"
+                  )} />
+                  <item.icon size={17} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                  {!collapsed && item.primary && (
+                    <kbd className="ml-auto text-[9.5px] font-semibold text-white/35 border border-white/15 rounded px-1 py-px">⌘{item.key}</kbd>
+                  )}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
 
-        {/* User */}
-        <div className="border-t border-gray-200 p-3">
-          <div className={cn("flex items-center gap-2", collapsed && "justify-center")}>
-            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600 shrink-0">
-              {user?.display_name?.[0] ?? 'A'}
+        {/* user / collapse */}
+        <div className="px-2.5 pb-3 space-y-1">
+          <div className="mx-1.5 h-px bg-white/[0.08] mb-2" />
+          <div className={cn("flex items-center gap-2.5 rounded-lg px-2 py-1.5", collapsed && "justify-center px-0")}>
+            <div className="w-7.5 h-7.5 w-[30px] h-[30px] rounded-full bg-white/12 flex items-center justify-center text-[12px] font-bold text-white/85 shrink-0">
+              {user?.display_name?.[0]?.toUpperCase() ?? "U"}
             </div>
             {!collapsed && (
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-gray-900 truncate">{user?.display_name}</p>
-                <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+              <div className="min-w-0 flex-1 leading-tight">
+                <p className="text-[12.5px] font-semibold text-white/90 truncate">{user?.display_name}</p>
+                <p className="text-[10.5px] text-white/40 capitalize">{user?.role}</p>
               </div>
             )}
             <button
-              onClick={() => { logout(); navigate('/login'); }}
-              className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
-              title="Logout"
+              onClick={() => { logout(); navigate("/login"); }}
+              title="Sign out"
+              className="p-1.5 rounded-md text-white/40 hover:text-white/90 hover:bg-white/[0.08] transition-colors"
             >
-              <LogOut size={15} />
+              <LogOut size={14.5} />
             </button>
           </div>
+          <button
+            onClick={() => setCollapsed(c => !c)}
+            className={cn(
+              "w-full flex items-center gap-2 rounded-lg px-3 py-1.5 text-[11.5px] font-medium text-white/35 hover:text-white/70 hover:bg-white/[0.05] transition-colors",
+              collapsed && "justify-center px-0"
+            )}
+          >
+            {collapsed ? <Menu size={15} /> : <><ChevronLeft size={14} /> Collapse</>}
+          </button>
         </div>
       </aside>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top bar */}
-        <header className="h-14 bg-white border-b border-gray-200 flex items-center px-6 shrink-0">
+      {/* ───────── Workspace ───────── */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* topbar */}
+        <header className="h-[60px] shrink-0 flex items-center gap-4 px-6 bg-[#f8f7f5]">
+          <h1 className="text-[15px] font-semibold text-[#1a1a1e] tracking-tight min-w-0 truncate">
+            {PAGE_TITLES[location.pathname] ?? ""}
+          </h1>
+
           <div className="flex-1" />
-          <div className="flex items-center gap-4 text-sm text-gray-500">
-            <span>{new Date().toLocaleDateString('en-IN', { weekday:'short', day:'2-digit', month:'short', year:'numeric' })}</span>
+
+          <button
+            onClick={() => setPaletteOpen(true)}
+            className="flex items-center gap-2.5 w-[300px] px-3.5 py-[7px] rounded-[10px] bg-white text-[13px] text-[#a8a29b]
+                       shadow-[0_1px_2px_rgba(26,22,18,0.05),0_0_0_1px_rgba(26,22,18,0.05)]
+                       hover:shadow-[0_2px_6px_rgba(26,22,18,0.08),0_0_0_1px_rgba(26,22,18,0.07)] transition-shadow"
+          >
+            <Search size={14.5} />
+            <span className="flex-1 text-left">Search patients, tests…</span>
+            <kbd className="text-[10px] font-semibold text-[#8a857d] bg-[#f1efec] rounded px-1.5 py-0.5">⌘K</kbd>
+          </button>
+
+          <div className="flex items-center gap-3 text-[12.5px] text-[#8a857d]">
+            <span
+              className="flex items-center gap-1.5"
+              title={online ? "All local features working" : "Offline — deliveries will queue"}
+            >
+              <span className={cn("w-[7px] h-[7px] rounded-full", online ? "bg-emerald-500" : "bg-amber-400")} />
+              {online ? "Online" : "Offline"}
+            </span>
+            <span className="w-px h-4 bg-[#e7e5e1]" />
+            <span className="font-medium">
+              {new Date().toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
+            </span>
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-auto p-6">
-          <Outlet />
+        {/* page */}
+        <main className="flex-1 overflow-auto px-6 pb-8">
+          <div className="max-w-[1240px] mx-auto animate-fade-up" key={location.pathname}>
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
