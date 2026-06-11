@@ -1,3 +1,5 @@
+mod commands;
+
 use tauri_plugin_sql::{Migration, MigrationKind};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -15,6 +17,12 @@ pub fn run() {
             sql: include_str!("../migrations/0002_seed.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 3,
+            description: "panel_bundles_and_orphan_cleanup",
+            sql: include_str!("../migrations/0003_panels_fix.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -25,7 +33,15 @@ pub fn run() {
                 .add_migrations("sqlite:scl.db", migrations)
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![
+            commands::save_pdf,
+            commands::reveal_in_folder,
+            commands::send_email,
+            commands::backup_now,
+            commands::restore_backup,
+            commands::save_pdf_bytes,
+            commands::app_version,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

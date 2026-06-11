@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "scl-lab-app",
+  "productName": "SCL Lab App",
   "version": "0.1.0",
   "identifier": "com.namansharma.scl-lab-app",
   "build": {
@@ -12,9 +12,12 @@
   "app": {
     "windows": [
       {
-        "title": "scl-lab-app",
-        "width": 800,
-        "height": 600
+        "title": "SCL Lab — Sharma Clinical Laboratory",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1100,
+        "minHeight": 700,
+        "center": true
       }
     ],
     "security": {
