@@ -8,6 +8,7 @@ import {
   Mail,
   MessageCircle,
   Smartphone,
+  Cable,
   Users,
   SlidersHorizontal,
   Lock,
@@ -24,10 +25,11 @@ import { BackupsTab } from "./tabs/BackupsTab";
 import { EmailTab } from "./tabs/EmailTab";
 import { WhatsAppTab } from "./tabs/WhatsAppTab";
 import { SmsTab } from "./tabs/SmsTab";
+import { AnalyzerTab } from "./tabs/AnalyzerTab";
 import { UsersTab } from "./tabs/UsersTab";
 import { SystemTab } from "./tabs/SystemTab";
 
-type TabId = "identity" | "branding" | "printing" | "backups" | "email" | "whatsapp" | "sms" | "users" | "system";
+type TabId = "identity" | "branding" | "printing" | "backups" | "email" | "whatsapp" | "sms" | "analyzer" | "users" | "system";
 
 const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: "identity", label: "Lab Identity", icon: Building2 },
@@ -37,6 +39,7 @@ const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: "email", label: "Email (SMTP)", icon: Mail },
   { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
   { id: "sms", label: "SMS", icon: Smartphone },
+  { id: "analyzer", label: "Analyzer", icon: Cable },
   { id: "users", label: "Users", icon: Users },
   { id: "system", label: "System", icon: SlidersHorizontal },
 ];
@@ -113,6 +116,7 @@ export function SettingsPage() {
                 {tab === "email" && <EmailTab settings={settings} />}
                 {tab === "whatsapp" && <WhatsAppTab settings={settings} />}
                 {tab === "sms" && <SmsTab settings={settings} />}
+                {tab === "analyzer" && <AnalyzerTab settings={settings} />}
                 {tab === "users" && <UsersTab />}
                 {tab === "system" && <SystemTab settings={settings} />}
               </>

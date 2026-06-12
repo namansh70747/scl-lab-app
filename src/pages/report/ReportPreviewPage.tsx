@@ -13,6 +13,8 @@ import { saveReportPdf } from "@/lib/pdf";
 import { sendEmail } from "@/lib/email";
 import { buildWhatsAppMessage, sendWhatsAppSemi } from "@/lib/whatsapp";
 import { formatDate } from "@/lib/format";
+import { getHistograms } from "@/lib/queries/analyzer";
+import { HistogramRow } from "@/components/report/Histogram";
 import { OrderWithResult, Panel } from "@/types";
 import { ChevronLeft, Printer, FileDown, MessageCircle, Mail, Check, ZoomIn, ZoomOut, Smartphone } from "lucide-react";
 import { useState } from "react";
@@ -62,6 +64,7 @@ export function ReportPreviewPage() {
   const { data: settings = {} } = useQuery({ queryKey: ['settings'], queryFn: getAllSettings });
   const { data: bill } = useQuery({ queryKey: ['bill', pid], queryFn: () => getBill(pid) });
   const { data: comment = '' } = useQuery({ queryKey: ['comment', pid], queryFn: () => getReportComment(pid) });
+  const { data: histograms } = useQuery({ queryKey: ['histograms', pid], queryFn: () => getHistograms(pid) });
   const { data: qr = '' } = useQuery({
     queryKey: ['qr', pid, patient?.test_no, patient?.report_time],
     queryFn: () => generateReportQR(patient!.test_no, patient!.name, patient!.report_time),
@@ -367,6 +370,7 @@ export function ReportPreviewPage() {
                           </div>
                         );
                       })}
+                      {group.dept === 'HAEMATOLOGY' && <HistogramRow histos={histograms} />}
                     </div>
                   );
                 })}
