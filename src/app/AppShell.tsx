@@ -9,7 +9,9 @@ import { cn } from "@/lib/utils";
 import { CommandPalette } from "@/app/CommandPalette";
 import { KeyboardShortcuts } from "@/app/KeyboardShortcuts";
 import { maybeDailyBackup } from "@/lib/backup";
-import { SCLRoundel } from "@/components/common/SCLLogo";
+import { BrandLogo } from "@/components/common/SCLLogo";
+import { useQuery } from "@tanstack/react-query";
+import { getAllSettings } from "@/lib/queries/settings";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", key: "D" },
@@ -33,6 +35,7 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
+  const { data: settings = {} } = useQuery({ queryKey: ["settings"], queryFn: getAllSettings });
 
   useEffect(() => {
     const on = () => setOnline(true), off = () => setOnline(false);
@@ -57,7 +60,7 @@ export function AppShell() {
       >
         {/* brand */}
         <div className={cn("flex items-center gap-3 h-[60px] px-4", collapsed && "justify-center px-0")}>
-          <SCLRoundel size={32} />
+          <BrandLogo src={settings.logo_data} height={collapsed ? 26 : 30} chip />
           {!collapsed && (
             <div className="min-w-0 leading-tight">
               <p className="text-[13px] font-bold text-white/95 truncate tracking-wide">Sharma Clinical</p>

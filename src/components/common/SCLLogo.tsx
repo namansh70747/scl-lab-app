@@ -42,6 +42,41 @@ export function SCLLogo({ height = 40, color = "#1e3f8f", className }: {
   );
 }
 
+/**
+ * The single brand mark used EVERYWHERE — sidebar, login, and the report header —
+ * so the logo a patient sees on paper is identical to the one staff see in the app.
+ * If a custom logo image has been uploaded in Settings → Branding it is used; otherwise
+ * the vector SCLLogo is drawn. `chip` wraps it on a white rounded plate so it stays
+ * legible on the dark maroon sidebar.
+ */
+export function BrandLogo({ src, height = 40, chip = false, className }: {
+  src?: string | null;
+  height?: number;
+  chip?: boolean;
+  className?: string;
+}) {
+  const mark = src
+    ? <img src={src} alt="SCL" style={{ height, width: "auto" }} className="object-contain" />
+    : <SCLLogo height={height} className={chip ? undefined : className} />;
+  if (!chip) return src ? <span className={className}>{mark}</span> : mark;
+  return (
+    <span
+      className={className}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#ffffff",
+        borderRadius: 10,
+        padding: "4px 7px",
+        boxShadow: "0 1px 3px rgba(0,0,0,.25)",
+      }}
+    >
+      {mark}
+    </span>
+  );
+}
+
 /** Compact roundel for tight spots (topbar/sidebar at small sizes). */
 export function SCLRoundel({ size = 34, className }: { size?: number; className?: string }) {
   return (

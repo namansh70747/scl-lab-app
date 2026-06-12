@@ -10,7 +10,8 @@ import {
   Eye, EyeOff, Lock, ShieldCheck, Zap, Database, Loader2,
   ArrowRight, AlertCircle, CheckCircle2, UserRound,
 } from "lucide-react";
-import { SCLLogo } from "@/components/common/SCLLogo";
+import { BrandLogo } from "@/components/common/SCLLogo";
+import { getAllSettings } from "@/lib/queries/settings";
 
 export function LoginPage() {
   const [username, setUsername] = useState("admin");
@@ -34,6 +35,8 @@ export function LoginPage() {
     queryKey: ["app-version"],
     queryFn: () => (isTauri() ? invoke<string>("app_version") : Promise.resolve("dev")),
   });
+
+  const { data: settings = {} } = useQuery({ queryKey: ["settings"], queryFn: getAllSettings });
 
   const { data: accounts = [] } = useQuery({
     queryKey: ["login-accounts"],
@@ -105,7 +108,7 @@ export function LoginPage() {
 
         <div className="relative flex items-center gap-3.5">
           <div className="bg-white rounded-2xl px-3 py-2 shadow-lg">
-            <SCLLogo height={30} />
+            <BrandLogo src={settings.logo_data} height={30} />
           </div>
           <div className="leading-tight">
             <p className="font-bold tracking-wide text-white/95">Sharma Clinical Laboratory</p>
@@ -136,7 +139,7 @@ export function LoginPage() {
         <div className="w-full max-w-sm">
           {/* mobile logo */}
           <div className="lg:hidden flex flex-col items-center mb-8">
-            <SCLLogo height={44} />
+            <BrandLogo src={settings.logo_data} height={44} />
             <h1 className="mt-3 text-lg font-bold text-maroon-700">Sharma Clinical Laboratory</h1>
           </div>
 
