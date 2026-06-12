@@ -282,5 +282,5 @@ function friendly(err: unknown): string {
     return "Database write permission is missing. Please restart the app (a configuration update needs to be applied).";
   }
   if (s.toLowerCase().includes("database")) return s.replace(/^Error:\s*/, "");
-  return "Something went wrong. Please try again.";
+  return s.replace(/^Error:\s*/, "") || "Something went wrong. Please try again.";
 }

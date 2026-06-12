@@ -29,6 +29,12 @@ pub fn run() {
             sql: include_str!("../migrations/0004_sms.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 5,
+            description: "cbc_analyzer",
+            sql: include_str!("../migrations/0005_analyzer.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
