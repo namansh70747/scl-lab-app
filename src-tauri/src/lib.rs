@@ -47,6 +47,8 @@ pub fn run() {
             commands::restore_backup,
             commands::save_pdf_bytes,
             commands::send_sms,
+            commands::serial_list_ports,
+            commands::serial_read,
             commands::app_version,
         ])
         .run(tauri::generate_context!())

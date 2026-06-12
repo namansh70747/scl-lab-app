@@ -319,6 +319,57 @@ pub fn send_sms(
     Ok(text)
 }
 
+/// List the serial ports the OS can see, so staff can pick the one the CBC
+/// analyzer (ERBA H360) is wired to.
+#[tauri::command]
+pub fn serial_list_ports() -> Result<Vec<String>, String> {
+    let ports = serialport::available_ports().map_err(|e| format!("Could not list serial ports: {e}"))?;
+    Ok(ports.into_iter().map(|p| p.port_name).collect())
+}
+
+/// Open the analyzer's serial port and read whatever it transmits within `window_ms`,
+/// returning the raw text. The frontend parses it (ASTM) and shows the values for the
+/// technician to confirm before they touch the patient's result — nothing is auto-saved.
+#[tauri::command]
+pub fn serial_read(port: String, baud: u32, window_ms: u64) -> Result<String, String> {
+    use std::io::Read;
+    let mut sp = serialport::new(&port, baud)
+        .timeout(std::time::Duration::from_millis(400))
+        .open()
+        .map_err(|e| format!("Could not open {port} at {baud} baud: {e}"))?;
+
+    let start = std::time::Instant::now();
+    let window = std::time::Duration::from_millis(window_ms.clamp(500, 30_000));
+    let mut acc: Vec<u8> = Vec::new();
+    let mut buf = [0u8; 4096];
+    let mut idle_after_data = 0u32;
+
+    while start.elapsed() < window {
+        match sp.read(&mut buf) {
+            Ok(0) => {}
+            Ok(n) => {
+                acc.extend_from_slice(&buf[..n]);
+                idle_after_data = 0;
+            }
+            Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
+                // Once we've captured a message, a couple of idle reads means it's complete.
+                if !acc.is_empty() {
+                    idle_after_data += 1;
+                    if idle_after_data >= 3 {
+                        break;
+                    }
+                }
+            }
+            Err(e) => return Err(format!("Serial read error on {port}: {e}")),
+        }
+    }
+
+    if acc.is_empty() {
+        return Err("No data received from the analyzer. Check the cable, port and baud rate, then re-transmit the result from the machine.".into());
+    }
+    Ok(String::from_utf8_lossy(&acc).into_owned())
+}
+
 /// Return the app's package version.
 #[tauri::command]
 pub fn app_version() -> String {
