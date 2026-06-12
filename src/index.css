@@ -269,15 +269,16 @@
     box-shadow: none !important;
   }
   body { background: white; margin: 0; padding: 0; }
+}
 
-  /* Pre-printed letterhead paper: drop the on-screen header/footer when printing and
-     shift the body into the paper's printed frame using the staff-set top/bottom gaps.
-     Only affects physical printing — the screen preview and the PDF (rasterised from the
-     screen DOM) always keep the full digital letterhead. */
-  #report-print-area.hide-letterhead-on-print { padding: 0 !important; }
-  #report-print-area.hide-letterhead-on-print .report-letterhead,
-  #report-print-area.hide-letterhead-on-print .report-letterfoot { display: none !important; }
-  #report-print-area.hide-letterhead-on-print .report-body {
-    padding: var(--pre-top, 40mm) 12mm var(--pre-bottom, 24mm) 12mm;
-  }
+/* Pre-printed letterhead paper: hide the header/footer and shift the body into the
+   paper's printed frame using the staff-set top/bottom gaps. This applies on screen too,
+   so the preview shows exactly what will print (WYSIWYG). Digital copies (Save PDF,
+   WhatsApp, Email) briefly remove this class while rasterising, so they ALWAYS carry the
+   full digital letterhead regardless of the print toggle. */
+.report-sheet.no-letterhead { padding: 0 !important; }
+.report-sheet.no-letterhead .report-letterhead,
+.report-sheet.no-letterhead .report-letterfoot { display: none !important; }
+.report-sheet.no-letterhead .report-body {
+  padding: var(--pre-top, 40mm) 12mm var(--pre-bottom, 24mm) 12mm;
 }

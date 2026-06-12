@@ -147,12 +147,23 @@ export function ReportPreviewPage() {
   }
 
   async function makePdf(): Promise<string> {
-    return saveReportPdf({
-      element: reportEl(),
-      testNo: patient!.test_no,
-      name: patient!.name,
-      reportDate: patient!.report_time,
-    });
+    const el = reportEl();
+    // Digital copies (PDF / WhatsApp / Email) ALWAYS include the full letterhead, even
+    // when the on-screen preview is in "no letterhead" mode for pre-printed paper.
+    const hadNoLetterhead = el.classList.contains('no-letterhead');
+    if (hadNoLetterhead) el.classList.remove('no-letterhead');
+    try {
+      // let the layout reflow before rasterising
+      await new Promise(r => requestAnimationFrame(() => r(null)));
+      return await saveReportPdf({
+        element: el,
+        testNo: patient!.test_no,
+        name: patient!.name,
+        reportDate: patient!.report_time,
+      });
+    } finally {
+      if (hadNoLetterhead) el.classList.add('no-letterhead');
+    }
   }
 
   const panelSummary = () => sortedPanels.map(p => p.panel.report_heading).join(', ') || 'Lab Report';
@@ -177,8 +188,16 @@ export function ReportPreviewPage() {
       technicianQual: settings.technician_qual ?? 'DMLT',
     });
     withLog('whatsapp_semi', `91${patient.phone}`, 'whatsapp', async () => {
-      const pdfPath = await makePdf();          // 1. render & save the PDF
-      await sendWhatsAppSemi(patient.phone, msg, pdfPath);  // 2. open chat + reveal PDF to drag-attach
+      const pdfPath = (await makePdf()) || undefined;     // 1. render & save the PDF
+      await sendWhatsAppSemi(patient.phone, msg, pdfPath); // 2. open chat + reveal PDF
+      if (pdfPath) {
+        alert(
+          'WhatsApp chat opened with the message ready.\n\n' +
+          'The report PDF has been highlighted in its folder — drag it into the chat ' +
+          '(or click 📎 → Document and pick the highlighted file), then press Send.\n\n' +
+          '(Fully automatic PDF sending needs the WhatsApp Business API — ask to enable it.)'
+        );
+      }
     });
   }
 
@@ -212,7 +231,7 @@ export function ReportPreviewPage() {
       return;
     }
     withLog('email', patient.email, 'email', async () => {
-      const pdfPath = await makePdf();
+      const pdfPath = (await makePdf()) || null;   // "" (browser) → null so we don't attach a missing file
       const tech = settings.technician_name ?? 'Rajesh Kumar (Vicky)';
       const bodyHtml = `<div style="font-family:Inter,Arial,sans-serif;color:#1a1a1e">
         <p>Dear ${patient.title} ${patient.name},</p>
@@ -253,7 +272,7 @@ export function ReportPreviewPage() {
           <div style={{ width: `${zoom}%`, transformOrigin: 'top left' }} className="mx-auto">
             <div
               id="report-print-area"
-              className={cn("report-sheet bg-white mx-auto shadow-sm relative", !printLetterhead && "hide-letterhead-on-print")}
+              className={cn("report-sheet bg-white mx-auto shadow-sm relative", !printLetterhead && "no-letterhead")}
               style={{ width: '210mm', minHeight: '297mm', padding: '12mm', fontFamily: 'Georgia, "Times New Roman", serif', ['--pre-top' as string]: `${preTop}mm`, ['--pre-bottom' as string]: `${preBottom}mm` }}
             >
               {showWatermark && (

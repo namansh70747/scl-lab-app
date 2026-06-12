@@ -57,9 +57,10 @@ export async function saveReportPdf(opts: {
     return "";
   }
 
-  const d = opts.reportDate ? new Date(opts.reportDate) : new Date();
-  const yyyy = isNaN(d.getTime()) ? "" : String(d.getFullYear());
-  const mm = isNaN(d.getTime()) ? "" : String(d.getMonth() + 1).padStart(2, "0");
+  let d = opts.reportDate ? new Date(opts.reportDate) : new Date();
+  if (isNaN(d.getTime())) d = new Date();   // fall back to today, never an empty path segment
+  const yyyy = String(d.getFullYear());
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
 
   const docDir = await documentDir();
   const outPath = await join(docDir, "SCL Reports", yyyy, mm, fileName);
