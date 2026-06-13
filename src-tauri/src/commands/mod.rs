@@ -48,10 +48,16 @@ pub fn reveal_in_folder(path: String) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     let result = Command::new("open").arg("-R").arg(&path).spawn();
 
+    // `explorer /select,` needs the PATH quoted but the switch UNquoted; Rust's normal arg
+    // quoting would wrap the whole thing and Explorer would ignore it (paths have spaces).
+    // raw_arg lets us emit the exact command line.
     #[cfg(target_os = "windows")]
-    let result = Command::new("explorer")
-        .arg(format!("/select,{}", path))
-        .spawn();
+    let result = {
+        use std::os::windows::process::CommandExt;
+        Command::new("explorer.exe")
+            .raw_arg(format!("/select,\"{}\"", path))
+            .spawn()
+    };
 
     #[cfg(target_os = "linux")]
     let result = {
@@ -78,8 +84,11 @@ pub fn open_path(path: String) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     let result = Command::new("open").arg(&path).spawn();
 
+    // Use explorer.exe to open the file with its default app — it takes the path as a single
+    // argument (no cmd.exe re-parsing of &, %, ^, () that a profile/Documents path may contain),
+    // and Rust quotes the spaces in "SCL Reports".
     #[cfg(target_os = "windows")]
-    let result = Command::new("cmd").args(["/C", "start", "", &path]).spawn();
+    let result = Command::new("explorer.exe").arg(&path).spawn();
 
     #[cfg(target_os = "linux")]
     let result = Command::new("xdg-open").arg(&path).spawn();
@@ -264,6 +273,13 @@ pub fn restore_backup(backup_path: String, db_path: String) -> Result<String, St
     }
     std::fs::copy(backup, &live)
         .map_err(|e| format!("Failed to restore backup into place: {e}"))?;
+
+    // Remove any stale WAL/SHM sidecars next to the live DB — otherwise SQLite would replay
+    // the old write-ahead log over the freshly restored file and resurrect/corrupt data.
+    for ext in ["db-wal", "db-shm"] {
+        let side = live.with_extension(ext);
+        if side.exists() { let _ = std::fs::remove_file(&side); }
+    }
 
     Ok("Restore complete. Please restart the app to load the restored data.".into())
 }
@@ -584,9 +600,18 @@ pub fn copy_file_to_clipboard(path: String) -> Result<(), String> {
 
     #[cfg(target_os = "windows")]
     {
+        // Set-Clipboard only copies the path as TEXT — pasting that into WhatsApp types the
+        // path, not the file. Put a real CF_HDROP file-drop on the clipboard via WinForms so
+        // Ctrl+V attaches the PDF. Clipboard APIs require an STA thread (-STA).
         let safe = path.replace('\'', "''");
+        let script = format!(
+            "Add-Type -AssemblyName System.Windows.Forms; \
+             $c = New-Object System.Collections.Specialized.StringCollection; \
+             $c.Add('{safe}') | Out-Null; \
+             [System.Windows.Forms.Clipboard]::SetFileDropList($c)"
+        );
         let out = Command::new("powershell")
-            .args(["-NoProfile", "-Command", &format!("Set-Clipboard -LiteralPath '{safe}'")])
+            .args(["-NoProfile", "-STA", "-Command", &script])
             .output()
             .map_err(|e| format!("Clipboard copy failed: {e}"))?;
         if !out.status.success() {
