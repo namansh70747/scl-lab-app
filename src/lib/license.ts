@@ -89,7 +89,10 @@ async function effectiveNow(): Promise<number> {
   const now = Date.now();
   const stored = parseInt((await readSetting("time_hwm")) ?? "0", 10) || 0;
   const eff = Math.max(now, stored);
-  if (eff > stored) {
+  // Only persist when the mark moves forward by ≥1h. The gate re-checks every minute and the
+  // clock always advances, so writing every call would hammer the DB with a write a minute,
+  // forever. Hour granularity keeps rollback protection while cutting the write churn ~60×.
+  if (eff - stored >= 3_600_000) {
     await dbExecute(
       `INSERT INTO settings(key,value,updated_at) VALUES('time_hwm',?,CURRENT_TIMESTAMP)
        ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP`,
@@ -101,13 +104,15 @@ async function effectiveNow(): Promise<number> {
 
 /** Activate with a key. Verifies + checks expiry, then stores it (ungated — no login yet). */
 export async function activateLicense(key: string): Promise<LicenseInfo> {
-  const info = await verifyLicenseKey(key.trim());
+  // Strip ALL whitespace — keys pasted from WhatsApp/email often pick up spaces or line wraps.
+  const cleaned = key.replace(/\s+/g, "");
+  const info = await verifyLicenseKey(cleaned);
   if (!info) throw new Error("This activation key is not valid. Please re-check it (or contact NamAsta).");
   if (info.exp * 1000 < await effectiveNow()) throw new Error("This activation key has already expired.");
   await dbExecute(
     `INSERT INTO settings(key,value,updated_at) VALUES('license_key',?,CURRENT_TIMESTAMP)
      ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP`,
-    [key.trim()]
+    [cleaned]
   );
   return info;
 }
