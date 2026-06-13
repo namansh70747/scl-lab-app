@@ -3,6 +3,7 @@ import { Save, Send } from "lucide-react";
 import { Card, TabHeader, TextField, SelectField, PrimaryButton, SecondaryButton, NoteBox } from "../ui";
 import { useSettingsForm } from "../useSettingsForm";
 import { sendWhatsAppSemi } from "@/lib/whatsapp";
+import { promptDialog } from "@/lib/dialog";
 import { errMessage } from "../toast";
 
 const KEYS = ["whatsapp_mode", "bsp_api_key", "wa_phone_id", "bsp_template_name"];
@@ -17,7 +18,7 @@ export function WhatsAppTab({ settings }: { settings: Record<string, string> }) 
   }
 
   async function sendTest() {
-    const input = window.prompt("Send a test WhatsApp to which 10-digit number?", "");
+    const input = await promptDialog({ title: "Send test WhatsApp", placeholder: "10-digit number", confirmText: "Open" });
     if (!input) return;
     const phone = input.replace(/\D/g, "");
     if (phone.length !== 10) {

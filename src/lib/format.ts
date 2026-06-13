@@ -4,7 +4,7 @@
  * the displayed day (the off-by-one "Report DATE" bug). Normalise such values to
  * explicit UTC so every timestamp converts to local time correctly and consistently.
  */
-function parseDbDate(dt: string): Date {
+export function parseDbDate(dt: string): Date {
   if (dt.includes('T')) return new Date(dt); // already ISO (e.g. nowISO())
   const m = /^(\d{4}-\d{2}-\d{2})[ ](\d{2}:\d{2}:\d{2})/.exec(dt);
   if (m) return new Date(`${m[1]}T${m[2]}Z`); // SQLite UTC → explicit UTC

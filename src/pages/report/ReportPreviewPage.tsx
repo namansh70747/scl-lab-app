@@ -227,8 +227,8 @@ export function ReportPreviewPage() {
     const hadNoLetterhead = el.classList.contains('no-letterhead');
     if (hadNoLetterhead) el.classList.remove('no-letterhead');
     try {
-      // let the layout reflow before rasterising
-      await new Promise(r => requestAnimationFrame(() => r(null)));
+      // wait two frames so the full-letterhead layout actually paints before rasterising
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r(null))));
       return await saveReportPdf({
         element: el,
         testNo: patient!.test_no,
@@ -464,7 +464,7 @@ export function ReportPreviewPage() {
                         <tbody>{renderRows(rows)}</tbody>
                       </table>
                       {renderNotes(rows)}
-                      {dept === 'HAEMATOLOGY' && <HistogramRow histos={histograms} />}
+                      {panel.code === 'CBC' && <HistogramRow histos={histograms} />}
                     </div>
                   );
                 })}

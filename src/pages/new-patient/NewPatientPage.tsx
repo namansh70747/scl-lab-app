@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { promptDialog } from "@/lib/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listDoctors, upsertDoctor } from "@/lib/queries/doctors";
 import { searchTests, listPanels, listTests } from "@/lib/queries/tests";
@@ -132,7 +133,7 @@ export function NewPatientPage() {
   }
 
   async function addDoctorInline() {
-    const name = window.prompt('New referring doctor name:')?.trim();
+    const name = (await promptDialog({ title: 'New referring doctor', placeholder: 'Doctor name', confirmText: 'Add' }))?.trim();
     if (!name) return;
     try {
       const id = await upsertDoctor(name.toUpperCase());

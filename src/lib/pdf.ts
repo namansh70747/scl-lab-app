@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
 import { documentDir, join } from "@tauri-apps/api/path";
 import { invoke, isTauri } from "@/lib/tauri";
+import { parseDbDate } from "@/lib/format";
 
 /** Rasterise the on-screen report element into a multi-page A4 PDF and return it
  *  as a jsPDF document. The SAME DOM that is shown/printed is captured, so paper,
@@ -104,7 +105,7 @@ export async function saveReportPdf(opts: {
     return "";
   }
 
-  let d = opts.reportDate ? new Date(opts.reportDate) : new Date();
+  let d = opts.reportDate ? parseDbDate(opts.reportDate) : new Date();
   if (isNaN(d.getTime())) d = new Date();   // fall back to today, never an empty path segment
   const yyyy = String(d.getFullYear());
   const mm = String(d.getMonth() + 1).padStart(2, "0");

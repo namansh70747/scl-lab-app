@@ -1,7 +1,27 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, Component, type ReactNode } from "react";
 import { useSession } from "@/lib/session";
 import { AppShell } from "@/app/AppShell";
+import { DialogHost } from "@/lib/dialog";
+
+// Catches a failed lazy-chunk load (e.g. after an update swaps chunk hashes) so the app
+// shows a recoverable message instead of a blank white screen.
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    if (this.state.failed) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen gap-3 text-center px-6">
+          <p className="text-[15px] font-semibold text-[#1a1a1e]">Something didn’t load correctly.</p>
+          <p className="text-[13px] text-[#8a857d]">Please reload the app.</p>
+          <button onClick={() => window.location.reload()} className="btn btn-primary mt-1">Reload</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Route-level code-splitting (§7D.2): each page's JS loads on first visit, then is cached.
 const LoginPage = lazy(() => import("@/pages/login/LoginPage").then(m => ({ default: m.LoginPage })));
@@ -40,6 +60,8 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <DialogHost />
+      <ChunkErrorBoundary>
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -65,6 +87,7 @@ export default function App() {
           </Route>
         </Routes>
       </Suspense>
+      </ChunkErrorBoundary>
     </BrowserRouter>
   );
 }

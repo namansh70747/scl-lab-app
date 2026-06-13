@@ -1,5 +1,19 @@
 use std::path::{Path, PathBuf};
 
+/// Locate the live SQLite database that tauri-plugin-sql created (app config/data dir).
+fn resolve_db_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    use tauri::Manager;
+    for dir in [app.path().app_config_dir(), app.path().app_data_dir()] {
+        if let Ok(d) = dir {
+            let p = d.join("scl.db");
+            if p.exists() {
+                return Ok(p);
+            }
+        }
+    }
+    Err("Could not locate the database file to back up.".into())
+}
+
 /// Write the given full HTML document next to `out_path` (with the extension
 /// swapped to `.html`), creating parent directories as needed, and return the
 /// path of the written `.html` file.
@@ -111,10 +125,17 @@ pub fn send_email(
     let tls_parameters = TlsParameters::new(host.clone())
         .map_err(|e| format!("Failed to build TLS parameters: {e}"))?;
 
+    // Port 465 = implicit TLS (Wrapper); 587/25 = STARTTLS (Required). Gmail default is 587.
+    let tls = if port == 465 {
+        Tls::Wrapper(tls_parameters)
+    } else {
+        Tls::Required(tls_parameters)
+    };
+
     let mailer = SmtpTransport::builder_dangerous(host.as_str())
         .port(port)
         .credentials(Credentials::new(username, password))
-        .tls(Tls::Required(tls_parameters))
+        .tls(tls)
         .timeout(Some(Duration::from_secs(10)))
         .build();
 
@@ -129,16 +150,14 @@ pub fn send_email(
 /// list of written backup paths.
 #[tauri::command]
 pub fn backup_now(
-    db_path: String,
+    app: tauri::AppHandle,
     dest1: String,
     dest2: Option<String>,
 ) -> Result<Vec<String>, String> {
     use chrono::Local;
 
-    let src = Path::new(&db_path);
-    if !src.exists() {
-        return Err(format!("Database file not found: {db_path}"));
-    }
+    let src_buf = resolve_db_path(&app)?;
+    let src = src_buf.as_path();
 
     let date = Local::now().format("%Y-%m-%d").to_string();
     let file_name = format!("scl-backup-{date}.db");

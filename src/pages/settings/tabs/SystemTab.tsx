@@ -3,6 +3,7 @@ import { Save, RefreshCw, AlertTriangle } from "lucide-react";
 import { Card, TabHeader, TextField, PrimaryButton, SecondaryButton, NoteBox } from "../ui";
 import { useSettingsForm } from "../useSettingsForm";
 import { invoke, isTauri } from "@/lib/tauri";
+import { confirmDialog } from "@/lib/dialog";
 
 const KEYS = ["next_test_no", "financial_year", "backup_retention_days"];
 
@@ -33,9 +34,12 @@ export function SystemTab({ settings }: { settings: Record<string, string> }) {
 
   async function onSave() {
     if (nextChanged) {
-      const ok = window.confirm(
-        "You changed the Next Test Number. Setting it lower than existing records can cause duplicate test numbers. Continue?"
-      );
+      const ok = await confirmDialog({
+        title: "Change Next Test Number?",
+        message: "Setting it lower than existing records can cause duplicate test numbers. Continue?",
+        danger: true,
+        confirmText: "Change",
+      });
       if (!ok) return;
     }
     if (await f.save()) f.toast.success("System settings saved.");

@@ -12,6 +12,7 @@ import { getAllSettings } from "@/lib/queries/settings";
 import { readAnalyzerConfigured } from "@/lib/serial";
 import { matchToOrders, type AnalyzerMatch, type AnalyzerReading } from "@/lib/astm";
 import { saveHistograms } from "@/lib/queries/analyzer";
+import { promptDialog } from "@/lib/dialog";
 import { cn } from "@/lib/utils";
 import { Check, CheckCircle, ChevronLeft, FileText, Unlock, X, Cable, Plus } from "lucide-react";
 
@@ -68,7 +69,7 @@ export function ResultEntryPage() {
   const valuesMap: Record<string, number | null> = {};
   for (const o of orders) {
     const v = localValues[o.order.id] ?? '';
-    const n = parseFloat(v);
+    const n = parseFloat(v.replace(/,/g, ''));   // strip thousands separators like calc.ts/flags.ts
     if (!isNaN(n)) valuesMap[o.test.code] = n;
   }
 
@@ -128,7 +129,7 @@ export function ResultEntryPage() {
 
   const unlockMut = useMutation({
     mutationFn: async () => {
-      const reason = window.prompt('Reason for unlocking this approved report (audit-logged):');
+      const reason = await promptDialog({ title: 'Unlock report', message: 'Reason for unlocking this approved report (audit-logged):', confirmText: 'Unlock' });
       if (!reason) throw new Error('cancelled');
       for (const o of orders) {
         if (o.result?.approved_at) await unlockResult(o.order.id, reason, user!.id);
@@ -220,6 +221,7 @@ export function ResultEntryPage() {
         qc.invalidateQueries({ queryKey: ['bill', pid] }),
         qc.invalidateQueries({ queryKey: ['today-patients'] }),
         qc.invalidateQueries({ queryKey: ['patients-search'] }),
+        qc.invalidateQueries({ queryKey: ['dashboard-stats'] }),
       ]);
       setShowAddTest(false); setAddQuery(''); setAddResults([]);
     } catch (e) {

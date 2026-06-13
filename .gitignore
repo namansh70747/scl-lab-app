@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local working material (not part of the app)
+check/
+.claude/
+this-is-a-plan-logical-blum.md
+.DS_Store
+**/.DS_Store

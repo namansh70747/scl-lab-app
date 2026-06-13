@@ -48,5 +48,7 @@ export async function verifyPassword(password: string, stored: string): Promise<
 /** A freshly-seeded admin ships with a placeholder hash; first login accepts any
  *  password and forces a reset (handled by the Login page). */
 export function isPlaceholderHash(stored: string): boolean {
-  return !stored || stored.includes('placeholder') || !stored.startsWith('pbkdf2$');
+  // Only an empty or explicitly-marked placeholder grants the first-run "any password" path.
+  // A corrupted/garbage hash must fail closed (verifyPassword returns false), NOT log anyone in.
+  return !stored || stored.includes('placeholder');
 }

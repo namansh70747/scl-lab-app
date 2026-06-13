@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { promptDialog } from "@/lib/dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, KeyRound, ShieldCheck, Shield, Users as UsersIcon } from "lucide-react";
 import { Card, TabHeader, TextField, SelectField, PrimaryButton } from "../ui";
@@ -47,7 +48,7 @@ export function UsersTab() {
   }
 
   async function onResetPassword(u: User) {
-    const pw = window.prompt(`Set a new temporary password for “${u.username}”:`, "");
+    const pw = await promptDialog({ title: `Reset password`, message: `Set a new temporary password for “${u.username}”.`, password: true, confirmText: "Set password" });
     if (!pw) return;
     if (pw.length < 4) {
       toast.error("Password is too short.");

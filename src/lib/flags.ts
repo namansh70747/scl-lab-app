@@ -9,7 +9,7 @@ export function computeFlag(
 ): '' | 'H' | 'L' | 'A' {
   if (!value || !value.trim()) return '';
 
-  if (resultType === 'numeric') {
+  if (resultType === 'numeric' || resultType === 'calculated') {
     const num = parseFloat(value.replace(/,/g, ''));
     if (isNaN(num)) return '';
 
@@ -50,7 +50,8 @@ export function findRange(
   };
   const s = sexMap[sex] || 'ANY';
 
-  // Try sex-specific first, then ANY
+  // Sex-specific first, then ANY. Never fall back to the OTHER sex's range — applying the
+  // wrong sex's limits would produce a clinically wrong H/L flag.
   const candidates = ranges.filter(r =>
     ageDays >= r.age_min_days && ageDays <= r.age_max_days
   );
@@ -58,7 +59,7 @@ export function findRange(
   return (
     candidates.find(r => r.sex === s) ||
     candidates.find(r => r.sex === 'ANY') ||
-    candidates[0] ||
+    (s === 'ANY' ? candidates[0] : null) ||
     null
   );
 }
@@ -80,5 +81,6 @@ export function patientAgeDays(age: number, ageUnit: 'YRS' | 'MTH' | 'DAYS'): nu
     case 'YRS': return Math.round(age * 365.25);
     case 'MTH': return Math.round(age * 30.44);
     case 'DAYS': return age;
+    default: return Math.round(age * 365.25);   // unexpected unit → treat as years
   }
 }

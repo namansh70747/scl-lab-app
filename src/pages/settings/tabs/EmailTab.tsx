@@ -3,6 +3,7 @@ import { Save, MailCheck } from "lucide-react";
 import { Card, TabHeader, TextField, PrimaryButton, SecondaryButton } from "../ui";
 import { useSettingsForm } from "../useSettingsForm";
 import { sendEmail } from "@/lib/email";
+import { promptDialog } from "@/lib/dialog";
 import { errMessage } from "../toast";
 
 const KEYS = ["smtp_host", "smtp_port", "smtp_user", "smtp_pass"];
@@ -16,7 +17,7 @@ export function EmailTab({ settings }: { settings: Record<string, string> }) {
   }
 
   async function sendTest() {
-    const to = window.prompt("Send a test email to which address?", f.get("smtp_user"));
+    const to = await promptDialog({ title: "Send test email", defaultValue: f.get("smtp_user"), placeholder: "email address", confirmText: "Send" });
     if (!to) return;
     const recipient = to.trim();
     if (!/^\S+@\S+\.\S+$/.test(recipient)) {

@@ -4,14 +4,13 @@ import { getSetting } from '@/lib/queries/settings';
 /** Run the daily dual backup via the Rust `backup_now` command. Returns the list of
  *  written backup file paths (§4A.8). dest dirs come from settings. */
 export async function backupNow(): Promise<string[]> {
-  const [dbPath, dest1, dest2] = await Promise.all([
-    getSetting('db_path'),
+  const [dest1, dest2] = await Promise.all([
     getSetting('backup_dir_1'),
     getSetting('backup_dir_2'),
   ]);
   if (!dest1) throw new Error('No backup folder configured. Set one in Settings → Backups.');
+  // The Rust side resolves the real DB file path itself (app data dir).
   return invoke<string[]>('backup_now', {
-    dbPath: dbPath ?? 'sqlite:scl.db',
     dest1,
     dest2: dest2 || null,
   });

@@ -3,6 +3,7 @@ import { Save, Send } from "lucide-react";
 import { Card, TabHeader, TextField, SelectField, PrimaryButton, SecondaryButton, NoteBox } from "../ui";
 import { useSettingsForm } from "../useSettingsForm";
 import { sendSms } from "@/lib/sms";
+import { promptDialog } from "@/lib/dialog";
 import { errMessage } from "../toast";
 
 const KEYS = ["sms_provider", "sms_api_key", "sms_sender_id", "sms_dlt_template_id"];
@@ -16,7 +17,7 @@ export function SmsTab({ settings }: { settings: Record<string, string> }) {
   }
 
   async function sendTest() {
-    const num = window.prompt("Send a test SMS to which 10-digit mobile number?");
+    const num = await promptDialog({ title: "Send test SMS", placeholder: "10-digit mobile number", confirmText: "Send" });
     if (!num) return;
     if (!(await f.save())) return;
     setTesting(true);

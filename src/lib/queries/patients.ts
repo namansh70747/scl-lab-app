@@ -77,10 +77,11 @@ export async function createPatient(input: NewPatientInput, userId: number): Pro
     // Bill (net/balance are generated columns). The lab collects payment manually at the
     // counter, so the bill is recorded as fully received — there is no balance-due tracking.
     const total = Object.values(input.prices).reduce((a, b) => a + b, 0);
-    const received = Math.max(0, total - input.concession);
+    const concession = Math.max(0, Math.min(input.concession, total));   // never exceed total → no negative net/balance
+    const received = total - concession;
     await db.execute(
       'INSERT INTO bills(patient_id,total,concession,received,mode) VALUES(?,?,?,?,?)',
-      [patientId, total, input.concession, received, input.mode]
+      [patientId, total, concession, received, input.mode]
     );
 
     // Advance the receipt number

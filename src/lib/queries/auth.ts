@@ -107,12 +107,29 @@ export async function adminResetPassword(userId: number, newPassword: string): P
   );
 }
 
+async function activeAdminCount(): Promise<number> {
+  const rows = await dbQuery<{ n: number }>("SELECT COUNT(*) as n FROM users WHERE role='admin' AND active=1");
+  return rows[0]?.n ?? 0;
+}
+
+async function isLastActiveAdmin(userId: number): Promise<boolean> {
+  const rows = await dbQuery<{ role: string; active: number }>('SELECT role, active FROM users WHERE id=?', [userId]);
+  const u = rows[0];
+  return !!u && u.role === 'admin' && u.active === 1 && (await activeAdminCount()) <= 1;
+}
+
 export async function setUserRole(userId: number, role: 'admin' | 'technician'): Promise<void> {
   assertCan('manage_users');
+  if (role !== 'admin' && (await isLastActiveAdmin(userId))) {
+    throw new Error('Cannot demote the last active admin — make another user an admin first.');
+  }
   await dbExecute('UPDATE users SET role=?,updated_at=CURRENT_TIMESTAMP WHERE id=?', [role, userId]);
 }
 
 export async function setUserActive(userId: number, active: number): Promise<void> {
   assertCan('manage_users');
+  if (active === 0 && (await isLastActiveAdmin(userId))) {
+    throw new Error('Cannot deactivate the last active admin — make another user an admin first.');
+  }
   await dbExecute('UPDATE users SET active=?,updated_at=CURRENT_TIMESTAMP WHERE id=?', [active, userId]);
 }
