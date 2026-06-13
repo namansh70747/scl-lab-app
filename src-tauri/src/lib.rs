@@ -69,6 +69,7 @@ pub fn run() {
             commands::serial_read,
             commands::tcp_capture,
             commands::whatsapp_send_document,
+            commands::copy_file_to_clipboard,
             commands::app_version,
         ])
         .run(tauri::generate_context!())

@@ -238,16 +238,20 @@ export function ReportPreviewPage() {
       });
       return;
     }
-    // Semi-automatic fallback (free, dad's number): open chat + reveal the PDF to attach.
+    // Semi-automatic fallback (free, dad's number): copy the PDF to the clipboard and open
+    // the chat with the text ready — the user just pastes (Ctrl/⌘+V) and presses Enter.
     withLog('whatsapp_semi', `91${patient.phone}`, 'whatsapp', async () => {
       const pdfPath = (await makePdf()) || undefined;
+      const { copyPdfToClipboard } = await import('@/lib/whatsapp');
+      if (pdfPath) await copyPdfToClipboard(pdfPath);
       await sendWhatsAppSemi(patient.phone, msg, pdfPath);
       if (pdfPath) {
         alert(
-          'WhatsApp chat opened with the message ready.\n\n' +
-          'To attach the report: click the “+” (attach) button → Document → choose the ' +
-          'highlighted PDF, then press Send.\n\n' +
-          '(For 100% automatic PDF sending, set up the WhatsApp Business API in Settings → WhatsApp.)'
+          'WhatsApp chat opened and the report PDF is on the clipboard.\n\n' +
+          '1. Click into the chat\n' +
+          '2. Press Ctrl + V  (⌘ + V on Mac) to paste the PDF\n' +
+          '3. Press Enter to send.\n\n' +
+          '(If paste doesn’t attach it, use the “+” button → Document → the highlighted file.)'
         );
       }
     });

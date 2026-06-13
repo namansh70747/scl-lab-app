@@ -59,6 +59,12 @@ export async function sendWhatsAppSemi(phone: string, message: string, pdfPath?:
   }
 }
 
+/** Put the report PDF on the clipboard so it can be pasted straight into WhatsApp. */
+export async function copyPdfToClipboard(path: string): Promise<void> {
+  if (!isTauri() || !path) return;
+  await invoke<void>('copy_file_to_clipboard', { path });
+}
+
 export interface WaApiConfig {
   apiKey: string;
   templateName: string;

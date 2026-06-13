@@ -519,6 +519,47 @@ pub fn whatsapp_send_document(
     Ok(txt)
 }
 
+/// Put a FILE on the system clipboard (not its text) so the user can paste it straight
+/// into WhatsApp Web/Desktop as an attachment. Used by the WhatsApp "paste & send" flow.
+#[tauri::command]
+pub fn copy_file_to_clipboard(path: String) -> Result<(), String> {
+    use std::process::Command;
+
+    #[cfg(target_os = "macos")]
+    {
+        let escaped = path.replace('\\', "\\\\").replace('"', "\\\"");
+        let script = format!("set the clipboard to (POSIX file \"{escaped}\")");
+        let out = Command::new("osascript")
+            .arg("-e")
+            .arg(&script)
+            .output()
+            .map_err(|e| format!("Clipboard copy failed: {e}"))?;
+        if !out.status.success() {
+            return Err(format!("Clipboard copy failed: {}", String::from_utf8_lossy(&out.stderr)));
+        }
+        return Ok(());
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let safe = path.replace('\'', "''");
+        let out = Command::new("powershell")
+            .args(["-NoProfile", "-Command", &format!("Set-Clipboard -LiteralPath '{safe}'")])
+            .output()
+            .map_err(|e| format!("Clipboard copy failed: {e}"))?;
+        if !out.status.success() {
+            return Err(format!("Clipboard copy failed: {}", String::from_utf8_lossy(&out.stderr)));
+        }
+        return Ok(());
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        let _ = path;
+        Err("Copying a file to the clipboard is not supported on this OS.".into())
+    }
+}
+
 /// Return the app's package version.
 #[tauri::command]
 pub fn app_version() -> String {
