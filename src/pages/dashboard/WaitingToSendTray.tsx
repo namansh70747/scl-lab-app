@@ -1,13 +1,12 @@
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MessageCircle, Printer, CheckCircle2, AlertTriangle, Send } from "lucide-react";
-import { buildWhatsAppMessage, sendWhatsAppSemi } from "@/lib/whatsapp";
-import { printReport } from "@/lib/printing";
 import { cn } from "@/lib/utils";
 import type { DeliveryLog } from "@/types";
 
 type PendingRow = DeliveryLog & {
   patient_name: string;
   test_no: number;
+  patient_id: number;
   phone?: string;
 };
 
@@ -20,39 +19,17 @@ export function WaitingToSendTray({
   rows: PendingRow[];
   loading: boolean;
 }) {
-  const [states, setStates] = useState<Record<string, CardState>>({});
-
+  const navigate = useNavigate();
+  const states: Record<string, CardState> = {};
   const keyFor = (r: PendingRow) => String(r.test_no);
 
-  async function handleWhatsApp(r: PendingRow) {
-    const k = keyFor(r);
-    if (!r.phone) {
-      setStates((s) => ({ ...s, [k]: { kind: "failed", message: "No phone number on file" } }));
-      return;
-    }
-    setStates((s) => ({ ...s, [k]: { kind: "sending" } }));
-    try {
-      const message = buildWhatsAppMessage({
-        title: "",
-        name: r.patient_name,
-        tests: "your test report",
-        technicianName: "SHARMA CLINICAL LABORATORY",
-        technicianQual: "Nangal Bhur",
-      });
-      await sendWhatsAppSemi(r.phone, message);
-      setStates((s) => ({ ...s, [k]: { kind: "sent", message: "Opened WhatsApp — attach the PDF" } }));
-    } catch (e) {
-      setStates((s) => ({
-        ...s,
-        [k]: { kind: "failed", message: e instanceof Error ? e.message : "Failed to open WhatsApp" },
-      }));
-    }
+  // The report PDF can only be produced on the report page (it rasterises the rendered
+  // report). So these actions open that patient's report and auto-run the send there.
+  function handleWhatsApp(r: PendingRow) {
+    navigate(`/report/${r.patient_id}?send=whatsapp`);
   }
-
   function handlePrint(r: PendingRow) {
-    const k = keyFor(r);
-    printReport();
-    setStates((s) => ({ ...s, [k]: { kind: "sent", message: "Sent to printer" } }));
+    navigate(`/report/${r.patient_id}?send=print`);
   }
 
   return (

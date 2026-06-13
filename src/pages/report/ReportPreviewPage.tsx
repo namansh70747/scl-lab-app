@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getPatientById, getBill } from "@/lib/queries/patients";
 import { getOrdersWithResults, getReportComment } from "@/lib/queries/results";
@@ -59,6 +59,8 @@ export function ReportPreviewPage() {
   const [preTop, setPreTop] = useState(() => Number(localStorage.getItem('scl_pre_top') ?? 40));
   const [preBottom, setPreBottom] = useState(() => Number(localStorage.getItem('scl_pre_bottom') ?? 24));
   const autoEmailTried = useRef(false);
+  const autoSendTried = useRef(false);
+  const [searchParams] = useSearchParams();
 
   const { data: patient } = useQuery({ queryKey: ['patient', pid], queryFn: () => getPatientById(pid) });
   const { data: orders = [] } = useQuery({ queryKey: ['orders', pid], queryFn: () => getOrdersWithResults(pid) });
@@ -99,6 +101,21 @@ export function ReportPreviewPage() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isApproved, patient?.email, orders.length, settings.smtp_host, settings.smtp_user, settings.smtp_pass]);
+
+  // Opened from the dashboard "Waiting to Send" tray with ?send=whatsapp|print — run it
+  // here, where the report is rendered and the PDF can actually be produced.
+  useEffect(() => {
+    const action = searchParams.get('send');
+    if (!action || autoSendTried.current) return;
+    if (!isApproved || !patient || !orders.length) return;
+    autoSendTried.current = true;
+    const t = setTimeout(() => {
+      if (action === 'whatsapp') handleWhatsApp();
+      else if (action === 'print') handlePrint();
+    }, 700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, isApproved, patient, orders.length]);
 
   // Build the numeric values map (by test code) for calculated rows.
   const valuesMap: Record<string, number | null> = {};
