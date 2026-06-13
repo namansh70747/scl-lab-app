@@ -1,4 +1,4 @@
-import { dbQuery, dbExecute, dbTransaction } from '@/lib/db';
+import { dbQuery, dbExecute, getDb } from '@/lib/db';
 import { Result, OrderWithResult, Test, TestRange, ResultType, Flag } from '@/types';
 import { assertCan } from '@/lib/session';
 
@@ -120,7 +120,16 @@ export async function approvePatient(patientId: number, userId: number): Promise
     );
   }
 
-  await dbTransaction(async (db) => {
+  const db = await getDb();
+  // The pool has no real transaction, so guard against a half-applied approval (results
+  // approved but report_time not set → a locked report stuck on "pending"). Capture exactly
+  // the rows we approve so we can revert them if the report-time write fails.
+  const toApprove = await dbQuery<{ id: number }>(
+    `SELECT o.id FROM orders o JOIN results r ON r.order_id = o.id
+     WHERE o.patient_id = ? AND r.approved_at IS NULL`,
+    [patientId]
+  );
+  try {
     await db.execute(
       `UPDATE results SET approved_by=?, approved_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP
        WHERE order_id IN (SELECT id FROM orders WHERE patient_id=?)
@@ -131,31 +140,40 @@ export async function approvePatient(patientId: number, userId: number): Promise
       'UPDATE patients SET report_time=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?',
       [patientId]
     );
-    await db.execute(
-      'INSERT INTO audit_log(user_id,action,entity,entity_id,at) VALUES(?,?,?,?,CURRENT_TIMESTAMP)',
-      [userId, 'result.approve', 'patients', patientId]
-    );
-  });
+  } catch (err) {
+    if (toApprove.length) {
+      const ph = toApprove.map(() => '?').join(',');
+      await db.execute(`UPDATE results SET approved_by=NULL, approved_at=NULL WHERE order_id IN (${ph})`, toApprove.map(o => o.id)).catch(() => {});
+    }
+    await db.execute('UPDATE patients SET report_time=NULL WHERE id=?', [patientId]).catch(() => {});
+    throw err;
+  }
+  // Audit is best-effort — never fail an already-applied clinical approval if logging hiccups.
+  await db.execute(
+    'INSERT INTO audit_log(user_id,action,entity,entity_id,at) VALUES(?,?,?,?,CURRENT_TIMESTAMP)',
+    [userId, 'result.approve', 'patients', patientId]
+  ).catch(() => {});
 }
 
 export async function unlockResult(orderId: number, reason: string, userId: number): Promise<void> {
   assertCan('unlock_results');
   const current = await dbQuery<Result>('SELECT * FROM results WHERE order_id=?', [orderId]);
-  await dbTransaction(async (db) => {
-    await db.execute(
-      'UPDATE results SET approved_by=NULL,approved_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE order_id=?',
-      [orderId]
-    );
-    // Re-open the report so its status reverts to "results pending".
-    await db.execute(
-      'UPDATE patients SET report_time=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=(SELECT patient_id FROM orders WHERE id=?)',
-      [orderId]
-    );
-    await db.execute(
-      'INSERT INTO audit_log(user_id,action,entity,entity_id,before_json,after_json,at) VALUES(?,?,?,?,?,?,CURRENT_TIMESTAMP)',
-      [userId, 'result.unlock', 'results', orderId, JSON.stringify(current[0]), JSON.stringify({ reason })]
-    );
-  });
+  const db = await getDb();
+  // Re-open the report FIRST: if the second write failed, a "pending but still-approved" row
+  // is recoverable (re-run unlock), whereas an unlocked row under an "approved" report is not.
+  await db.execute(
+    'UPDATE patients SET report_time=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=(SELECT patient_id FROM orders WHERE id=?)',
+    [orderId]
+  );
+  await db.execute(
+    'UPDATE results SET approved_by=NULL,approved_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE order_id=?',
+    [orderId]
+  );
+  // Audit is best-effort — never fail the unlock itself if logging hiccups.
+  await db.execute(
+    'INSERT INTO audit_log(user_id,action,entity,entity_id,before_json,after_json,at) VALUES(?,?,?,?,?,?,CURRENT_TIMESTAMP)',
+    [userId, 'result.unlock', 'results', orderId, JSON.stringify(current[0] ?? null), JSON.stringify({ reason })]
+  ).catch(() => {});
 }
 
 export async function markNotDone(orderId: number, notDone = 1): Promise<void> {
