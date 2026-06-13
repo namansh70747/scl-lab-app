@@ -53,6 +53,12 @@ pub fn run() {
             sql: include_str!("../migrations/0008_no_balance_due.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 9,
+            description: "more_tests",
+            sql: include_str!("../migrations/0009_more_tests.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
