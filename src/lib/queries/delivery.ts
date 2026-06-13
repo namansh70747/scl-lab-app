@@ -27,10 +27,13 @@ export async function hasDelivered(patientId: number, channel: string): Promise<
 }
 
 export async function getPendingDeliveries(): Promise<PendingDelivery[]> {
+  // Only a real patient delivery (WhatsApp/Email/SMS) clears a patient from the tray —
+  // printing or saving a PDF locally is NOT sending it to the patient.
   return dbQuery<PendingDelivery>(
     `SELECT p.id as patient_id, p.name as patient_name, p.test_no, p.phone
      FROM patients p
      LEFT JOIN delivery_log dl ON dl.patient_id=p.id AND dl.status IN ('sent','delivered')
+        AND dl.channel IN ('whatsapp_api','whatsapp_semi','email','sms')
      WHERE p.report_time IS NOT NULL AND dl.id IS NULL
      ORDER BY p.report_time DESC LIMIT 50`
   );
