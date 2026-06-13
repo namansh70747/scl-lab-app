@@ -30,11 +30,13 @@ async function renderReportPdf(el: HTMLElement): Promise<jsPDF> {
 
     if (p > 0) pdf.addPage();
     // Normally one sheet = one page; if a single profile overflows A4, slice it (rare).
+    // 2mm tolerance so a sub-millimetre overshoot from rasterisation rounding doesn't
+    // append an almost-blank extra page.
     let remaining = imgH;
     let position = 0;
     pdf.addImage(img, "JPEG", 0, position, imgW, imgH);
     remaining -= pageH;
-    while (remaining > 0.5) {
+    while (remaining > 2) {
       position -= pageH;
       pdf.addPage();
       pdf.addImage(img, "JPEG", 0, position, imgW, imgH);

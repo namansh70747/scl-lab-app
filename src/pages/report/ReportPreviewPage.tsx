@@ -92,10 +92,10 @@ export function ReportPreviewPage() {
     if (!isApproved || !patient?.email || !orders.length) return;
     if (!settings.smtp_host || !settings.smtp_user || !settings.smtp_pass) return;
     autoEmailTried.current = true;
+    setBusy('email');   // disable the manual Email/Print buttons up-front so we can't double-send during the settle window
     (async () => {
-      if (await hasDelivered(pid, 'email')) return;   // already emailed before
+      if (await hasDelivered(pid, 'email')) { setBusy(null); return; }   // already emailed before
       await new Promise(r => setTimeout(r, 900));      // let the report DOM + QR settle before rasterising
-      setBusy('email');
       try {
         await emailCore();
         await logDelivery(pid, 'email', patient.email!, 'sent');
@@ -397,6 +397,10 @@ export function ReportPreviewPage() {
 
   async function handleApprove() {
     if (!sessionUser || approving) return;
+    if (gatingOrders.length === 0) {
+      alert('There are no results to approve. Enter at least one test result first.');
+      return;
+    }
     setApproving(true);
     try {
       await approvePatient(pid, sessionUser.id);
@@ -409,7 +413,7 @@ export function ReportPreviewPage() {
         qc.invalidateQueries({ queryKey: ['pending-deliveries'] }),
       ]);
     } catch (e) {
-      alert(String(e));
+      alert(e instanceof Error ? e.message : String(e));
     } finally {
       setApproving(false);
     }

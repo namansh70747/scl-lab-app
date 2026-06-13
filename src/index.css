@@ -370,6 +370,9 @@
    WhatsApp, Email) briefly remove this class while rasterising, so they ALWAYS carry the
    full digital letterhead regardless of the print toggle. */
 .report-sheet.no-letterhead { padding: 0 !important; }
+/* Each test page carries its own 12mm padding; in pre-printed mode that must be removed
+   so the body's pre-top/pre-bottom gaps alone position the data inside the printed frame. */
+.report-sheet.no-letterhead .report-page { padding: 0 !important; }
 .report-sheet.no-letterhead .report-letterhead,
 .report-sheet.no-letterhead .report-letterfoot { display: none !important; }
 .report-sheet.no-letterhead .report-body {
