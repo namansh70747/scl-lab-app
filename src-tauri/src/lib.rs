@@ -78,6 +78,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::save_pdf,
             commands::reveal_in_folder,
+            commands::open_path,
             commands::send_email,
             commands::backup_now,
             commands::restore_backup,

@@ -69,8 +69,7 @@ export async function openPrintTestPage(printerName: string): Promise<void> {
   const dataUri = pdf.output("datauristring");
   const base64 = dataUri.substring(dataUri.indexOf(",") + 1);
   await invoke<string>("save_pdf_bytes", { base64Data: base64, outPath });
-  const { open } = await import("@tauri-apps/plugin-shell");
-  await open(outPath);
+  await invoke("open_path", { path: outPath });   // open in default PDF viewer (shell scope blocks file paths)
 }
 
 export async function printReportPdf(opts: { element: HTMLElement; testNo: number; name: string }): Promise<void> {
@@ -84,8 +83,7 @@ export async function printReportPdf(opts: { element: HTMLElement; testNo: numbe
   const dataUri = pdf.output("datauristring");
   const base64 = dataUri.substring(dataUri.indexOf(",") + 1);
   await invoke<string>("save_pdf_bytes", { base64Data: base64, outPath });
-  const { open } = await import("@tauri-apps/plugin-shell");
-  await open(outPath);   // opens in the default PDF viewer → user prints to the connected printer
+  await invoke("open_path", { path: outPath });   // opens in the default PDF viewer → user prints to the connected printer
 }
 
 /**

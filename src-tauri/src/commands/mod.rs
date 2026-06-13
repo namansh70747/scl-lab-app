@@ -67,6 +67,28 @@ pub fn reveal_in_folder(path: String) -> Result<(), String> {
         .map_err(|e| format!("Failed to reveal {path} in file manager: {e}"))
 }
 
+/// Open a file with the OS default application (e.g. a PDF in the system viewer, where
+/// Ctrl/⌘+P shows the print dialog). The tauri-plugin-shell `open` scope only permits
+/// mailto/tel/https URLs, so opening a local file path through it fails — this custom
+/// command uses the OS opener directly, the same approach as `reveal_in_folder`.
+#[tauri::command]
+pub fn open_path(path: String) -> Result<(), String> {
+    use std::process::Command;
+
+    #[cfg(target_os = "macos")]
+    let result = Command::new("open").arg(&path).spawn();
+
+    #[cfg(target_os = "windows")]
+    let result = Command::new("cmd").args(["/C", "start", "", &path]).spawn();
+
+    #[cfg(target_os = "linux")]
+    let result = Command::new("xdg-open").arg(&path).spawn();
+
+    result
+        .map(|_| ())
+        .map_err(|e| format!("Failed to open {path}: {e}"))
+}
+
 /// Send an email over SMTP (STARTTLS) with an optional PDF attachment.
 #[tauri::command]
 pub fn send_email(
@@ -153,6 +175,7 @@ pub fn backup_now(
     app: tauri::AppHandle,
     dest1: String,
     dest2: Option<String>,
+    retention_days: Option<u64>,
 ) -> Result<Vec<String>, String> {
     use chrono::Local;
 
@@ -178,7 +201,7 @@ pub fn backup_now(
         std::fs::copy(src, &target)
             .map_err(|e| format!("Failed to copy backup to {}: {e}", target.display()))?;
 
-        prune_old_backups(&dest_dir)
+        prune_old_backups(&dest_dir, retention_days.unwrap_or(30).max(1))
             .map_err(|e| format!("Failed to prune old backups in {dest}: {e}"))?;
 
         written.push(target.to_string_lossy().into_owned());
@@ -187,10 +210,10 @@ pub fn backup_now(
     Ok(written)
 }
 
-/// Remove `scl-backup-*.db` files older than 30 days in `dir`.
-fn prune_old_backups(dir: &Path) -> std::io::Result<()> {
+/// Remove `scl-backup-*.db` files older than `retention_days` days in `dir`.
+fn prune_old_backups(dir: &Path, retention_days: u64) -> std::io::Result<()> {
     let cutoff = std::time::SystemTime::now()
-        .checked_sub(std::time::Duration::from_secs(30 * 24 * 60 * 60))
+        .checked_sub(std::time::Duration::from_secs(retention_days * 24 * 60 * 60))
         .unwrap_or(std::time::UNIX_EPOCH);
 
     for entry in std::fs::read_dir(dir)? {

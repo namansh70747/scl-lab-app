@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Save, DatabaseBackup, RotateCcw, FolderOpen } from "lucide-react";
 import { Card, TabHeader, TextField, PrimaryButton, SecondaryButton, NoteBox } from "../ui";
 import { useSettingsForm } from "../useSettingsForm";
@@ -9,6 +10,7 @@ const KEYS = ["backup_dir_1", "backup_dir_2", "backup_retention_days"];
 
 export function BackupsTab({ settings }: { settings: Record<string, string> }) {
   const f = useSettingsForm(settings, KEYS);
+  const qc = useQueryClient();
   const [running, setRunning] = useState(false);
   const [lastPaths, setLastPaths] = useState<string[] | null>(null);
 
@@ -27,6 +29,7 @@ export function BackupsTab({ settings }: { settings: Record<string, string> }) {
     try {
       const paths = await backupNow();
       setLastPaths(paths);
+      await qc.invalidateQueries({ queryKey: ['settings'] });   // refresh the "Last backup" date
       f.toast.success(`Backup complete — ${paths.length} file(s) written.`);
     } catch (e) {
       f.toast.error(errMessage(e));
