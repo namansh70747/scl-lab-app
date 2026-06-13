@@ -291,14 +291,17 @@ export async function getDashboardStats(): Promise<{
     collection: number;
     balance: number;
   }>(
+    // NOTE: money totals are computed in subqueries over bills ONLY. Summing them across
+    // the orders/results join would multiply each bill by the patient's test count.
     `SELECT
        COUNT(DISTINCT p.id) as total_patients,
        COUNT(DISTINCT CASE WHEN r.approved_at IS NULL AND o.id IS NOT NULL THEN p.id END) as pending,
        COUNT(DISTINCT CASE WHEN p.report_time IS NOT NULL THEN p.id END) as approved,
-       COALESCE(SUM(b.received),0) as collection,
-       COALESCE(SUM(b.balance),0) as balance
+       (SELECT COALESCE(SUM(b2.received),0) FROM bills b2 JOIN patients p2 ON p2.id=b2.patient_id
+          WHERE date(p2.registered_at,'localtime')=date('now','localtime')) as collection,
+       (SELECT COALESCE(SUM(b2.balance),0) FROM bills b2 JOIN patients p2 ON p2.id=b2.patient_id
+          WHERE date(p2.registered_at,'localtime')=date('now','localtime')) as balance
      FROM patients p
-     LEFT JOIN bills b ON b.patient_id=p.id
      LEFT JOIN orders o ON o.patient_id=p.id
      LEFT JOIN results r ON r.order_id=o.id
      WHERE date(p.registered_at,'localtime')=date('now','localtime')`
