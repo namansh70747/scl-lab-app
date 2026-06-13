@@ -8,7 +8,7 @@ import { User } from "@/types";
 import { cn } from "@/lib/utils";
 import {
   Eye, EyeOff, Lock, ShieldCheck, Zap, Database, Loader2,
-  ArrowRight, AlertCircle, CheckCircle2, UserRound,
+  ArrowRight, AlertCircle, CheckCircle2, UserRound, Building2,
 } from "lucide-react";
 import { NamAstaMark } from "@/components/common/NamAstaLogo";
 import { getAllSettings } from "@/lib/queries/settings";
@@ -133,17 +133,8 @@ export function LoginPage() {
           </ul>
         </div>
 
-        <p className="relative text-xs text-white/35 flex items-center gap-3">
-          <span>{settings.lab_name ? `${settings.lab_name}${settings.address_line ? ` · ${settings.address_line}` : ''}` : 'NamAsta Diagnostics'} · v{version}</span>
-          {import.meta.env.DEV && (
-            <button
-              onClick={() => { localStorage.setItem('namasta_dev_onboard', '1'); window.location.reload(); }}
-              className="px-2 py-0.5 rounded-md border border-amber-400/30 bg-amber-500/10 text-amber-300/80 hover:text-amber-200"
-              title="Developer only — not shown to labs. Production shows this register/activate screen to any unlicensed lab automatically."
-            >
-              🛠 Dev: preview lab onboarding
-            </button>
-          )}
+        <p className="relative text-xs text-white/35">
+          {settings.lab_name ? `${settings.lab_name}${settings.address_line ? ` · ${settings.address_line}` : ''}` : 'NamAsta Diagnostics'} · v{version}
         </p>
       </aside>
 
@@ -205,6 +196,18 @@ export function LoginPage() {
                     : <>Sign in <ArrowRight size={17} /></>}
                 </button>
               </form>
+
+              {/* New-lab entry — plain language, clearly visible. */}
+              <div className="mt-6 pt-5 border-t border-white/10">
+                <p className="text-[13px] text-white/55 mb-2.5">First time here? Don't have a lab account yet?</p>
+                <button
+                  type="button"
+                  onClick={() => { localStorage.setItem('namasta_show_onboard', '1'); window.location.reload(); }}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#818cf8]/40 bg-[#6366f1]/10 px-4 py-3 text-[14px] font-semibold text-[#c7cbff] hover:bg-[#6366f1]/20 transition-colors"
+                >
+                  <Building2 size={17} /> Register your laboratory
+                </button>
+              </div>
             </>
           ) : (
             <>

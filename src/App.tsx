@@ -95,13 +95,12 @@ function LicenseGate() {
   const [phase, setPhase] = useState<GatePhase>({ kind: "loading" });
   const check = async () => {
     try {
-      // Dev preview: a developer can open the onboarding screens on demand without it blocking
-      // every launch (set from a button on the login page).
-      const devPreview = import.meta.env.DEV && localStorage.getItem("namasta_dev_onboard") === "1";
+      // "Set up a new laboratory" was tapped on the login screen — show onboarding on demand.
+      const showOnboard = localStorage.getItem("namasta_show_onboard") === "1";
       const status = await getLicenseStatus();          // dev → active:true (no payment)
-      if (status.dev && !devPreview) { setPhase({ kind: "app" }); return; }   // developer just enters
+      if (status.dev && !showOnboard) { setPhase({ kind: "app" }); return; }   // developer just enters
       const setup = await needsSetup();
-      if (devPreview) { setPhase({ kind: "onboard", licensed: status.active, needSetup: setup, status, preview: true }); return; }
+      if (showOnboard) { setPhase({ kind: "onboard", licensed: status.active, needSetup: setup, status, preview: true }); return; }
       // Active subscriber who's already set up → straight to sign-in (no re-filling, ever).
       if (status.active && !setup) { setPhase({ kind: "app" }); return; }
       if (status.active && setup) { setPhase({ kind: "onboard", licensed: true, needSetup: true, status }); return; }

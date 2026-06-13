@@ -27,10 +27,12 @@ export function OnboardingPage({ licensed, needSetup, status, onDone, preview }:
   licensed: boolean; needSetup: boolean; status: LicenseStatus; onDone: () => void; preview?: boolean;
 }) {
   const [step, setStep] = useState<"activate" | "setup">(licensed && !preview ? "setup" : "activate");
+  // Always clear the "show onboarding" request once we leave, so the next launch behaves normally.
+  const finishOnboarding = () => { localStorage.removeItem("namasta_show_onboard"); onDone(); };
   // After a successful activation: a brand-new lab still needs to set up; a RENEWING lab that's
   // already set up goes straight in (never re-enters its details).
-  const afterActivate = () => { if (needSetup) setStep("setup"); else onDone(); };
-  const exitPreview = () => { localStorage.removeItem("namasta_dev_onboard"); onDone(); };
+  const afterActivate = () => { if (needSetup) setStep("setup"); else finishOnboarding(); };
+  const exitPreview = () => finishOnboarding();
 
   return (
     <div className="relative min-h-screen w-full overflow-y-auto text-white"
@@ -57,7 +59,7 @@ export function OnboardingPage({ licensed, needSetup, status, onDone, preview }:
         {/* Strict order: credentials (setup) are only reachable AFTER a valid activation key. */}
         {step === "activate"
           ? <ActivateStep status={status} onActivated={afterActivate} />
-          : <SetupStep onDone={onDone} />}
+          : <SetupStep onDone={finishOnboarding} />}
       </div>
     </div>
   );
