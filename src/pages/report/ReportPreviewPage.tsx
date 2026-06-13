@@ -579,7 +579,7 @@ export function ReportPreviewPage() {
       {/* ── Action panel ── */}
       <aside className="w-[252px] shrink-0 space-y-4 pt-4 print:hidden">
         <div className="card p-4 space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d] mb-1">Deliver</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97] mb-1">Deliver</p>
           {!isApproved && (
             <>
               <p className="text-[12px] text-[#92600a] bg-[#fdf0d7] rounded-lg px-3 py-2 leading-snug">
@@ -604,7 +604,7 @@ export function ReportPreviewPage() {
         </div>
 
         <div className="card p-4 space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d]">Layout</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97]">Layout</p>
           <Toggle label="Print lab letterhead" checked={printLetterhead} onChange={(v) => { setPrintLetterhead(v); localStorage.setItem('scl_print_letterhead', v ? '1' : '0'); }} />
           {!printLetterhead && (
             <div className="rounded-lg bg-[#f1efec] px-3 py-2.5 space-y-2">
@@ -621,7 +621,7 @@ export function ReportPreviewPage() {
 
         {bill && (
           <div className="card p-4 space-y-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d] mb-1">Billing</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97] mb-1">Billing</p>
             <Row k="Total" v={`₹${bill.total}`} />
             {bill.concession > 0 && <Row k="Concession" v={`− ₹${bill.concession}`} />}
             {bill.concession > 0 && <Row k="Amount" v={`₹${bill.net}`} />}
@@ -637,11 +637,11 @@ function OutputBtn({ icon: Icon, label, onClick, done, disabled, busy, primary, 
 }) {
   return (
     <button onClick={onClick} disabled={disabled || busy} title={disabled ? 'Approve the report first' : undefined}
-      className={cn("w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
-        green ? "bg-green-600 text-white hover:bg-green-700"
-          : primary ? "bg-[#7b1b1b] text-white hover:bg-[#6a1717]"
-            : "border border-gray-300 text-gray-700 hover:bg-gray-50")}>
-      <Icon size={16} /> {busy ? '…' : label} {done && <Check size={13} className={green || primary ? 'text-white' : 'text-green-600'} />}
+      className={cn("w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed",
+        green ? "text-white bg-gradient-to-b from-[#16a34a] to-[#15803d] hover:brightness-110 shadow-[0_2px_8px_-2px_rgba(21,128,61,0.5)]"
+          : primary ? "text-white btn-accent"
+            : "border border-[#e6e7ee] text-[#34353f] hover:bg-[#fafafe] hover:border-[#c7c9ff]")}>
+      <Icon size={16} /> {busy ? '…' : label} {done && <Check size={13} className={green || primary ? 'text-white' : 'text-[#16a34a]'} />}
     </button>
   );
 }
@@ -651,7 +651,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
     <label className="flex items-center justify-between cursor-pointer">
       <span className="text-gray-600">{label}</span>
       <button type="button" onClick={() => onChange(!checked)}
-        className={cn("w-9 h-5 rounded-full transition-colors relative", checked ? "bg-[#7b1b1b]" : "bg-gray-300")}>
+        className={cn("w-9 h-5 rounded-full transition-colors relative", checked ? "bg-[#6366f1]" : "bg-gray-300")}>
         <span className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all", checked ? "left-4" : "left-0.5")} />
       </button>
     </label>
