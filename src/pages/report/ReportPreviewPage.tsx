@@ -4,7 +4,7 @@ import { getPatientById, getBill, updateBill } from "@/lib/queries/patients";
 import { getOrdersWithResults, getReportComment } from "@/lib/queries/results";
 import { listPanels } from "@/lib/queries/tests";
 import { getAllSettings } from "@/lib/queries/settings";
-import { logDelivery } from "@/lib/queries/delivery";
+import { logDelivery, hasDelivered } from "@/lib/queries/delivery";
 import { computeCalculated } from "@/lib/calc";
 import { computeFlag, patientAgeDays, findRange, displayRange } from "@/lib/flags";
 import { generateReportQR } from "@/lib/qr";
@@ -17,7 +17,7 @@ import { getHistograms } from "@/lib/queries/analyzer";
 import { HistogramRow } from "@/components/report/Histogram";
 import { OrderWithResult, Panel } from "@/types";
 import { ChevronLeft, Printer, FileDown, MessageCircle, Mail, Check, ZoomIn, ZoomOut, Smartphone } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { SCLLogo } from "@/components/common/SCLLogo";
 
@@ -57,6 +57,7 @@ export function ReportPreviewPage() {
   const [printLetterhead, setPrintLetterhead] = useState(true);
   const [preTop, setPreTop] = useState(() => Number(localStorage.getItem('scl_pre_top') ?? 40));
   const [preBottom, setPreBottom] = useState(() => Number(localStorage.getItem('scl_pre_bottom') ?? 24));
+  const autoEmailTried = useRef(false);
 
   const { data: patient } = useQuery({ queryKey: ['patient', pid], queryFn: () => getPatientById(pid) });
   const { data: orders = [] } = useQuery({ queryKey: ['orders', pid], queryFn: () => getOrdersWithResults(pid) });
@@ -73,6 +74,30 @@ export function ReportPreviewPage() {
 
   const activeOrders = orders.filter(o => !o.order.not_done);
   const isApproved = activeOrders.length > 0 && activeOrders.every(o => o.result?.approved_at);
+
+  // Auto-email the report once, right after it is approved, if the patient has an email
+  // address and SMTP is configured. Deduped via the delivery log so it never re-sends.
+  useEffect(() => {
+    if (autoEmailTried.current) return;
+    if (!isApproved || !patient?.email || !orders.length) return;
+    if (!settings.smtp_host || !settings.smtp_user || !settings.smtp_pass) return;
+    autoEmailTried.current = true;
+    (async () => {
+      if (await hasDelivered(pid, 'email')) return;   // already emailed before
+      await new Promise(r => setTimeout(r, 900));      // let the report DOM + QR settle before rasterising
+      setBusy('email');
+      try {
+        await emailCore();
+        await logDelivery(pid, 'email', patient.email!, 'sent');
+        setSent(s => ({ ...s, email: true }));
+      } catch (e) {
+        await logDelivery(pid, 'email', patient.email!, 'failed', String(e));
+      } finally {
+        setBusy(null);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isApproved, patient?.email, orders.length, settings.smtp_host, settings.smtp_user, settings.smtp_pass]);
 
   // Build the numeric values map (by test code) for calculated rows.
   const valuesMap: Record<string, number | null> = {};
@@ -223,28 +248,33 @@ export function ReportPreviewPage() {
     });
   }
 
+  // Core email send (no UI side-effects) — shared by the manual button and auto-on-approve.
+  async function emailCore(): Promise<void> {
+    const host = settings.smtp_host, port = settings.smtp_port, user = settings.smtp_user, pass = settings.smtp_pass;
+    const pdfPath = (await makePdf()) || null;   // "" (browser) → null so we don't attach a missing file
+    const tech = settings.technician_name ?? 'Rajesh Kumar (Vicky)';
+    const bodyHtml = `<div style="font-family:Inter,Arial,sans-serif;color:#1a1a1e">
+      <p>Dear ${patient!.title} ${patient!.name},</p>
+      <p>Please find attached your laboratory report (${panelSummary()}) from
+      <b style="color:#7b1b1b">Sharma Clinical Laboratory</b>, Nangal Bhur, Pathankot.</p>
+      <p style="color:#6b7280;font-size:13px">This is a computer-generated report. For queries, contact the laboratory.</p>
+      <p style="margin-top:18px">— ${tech}<br/>${settings.technician_qual ?? 'DMLT (PTU)'}</p>
+    </div>`;
+    await sendEmail({
+      host, port: parseInt(port, 10) || 587, username: user, password: pass,
+      to: patient!.email!, subject: `Lab Report — ${patient!.title} ${patient!.name} (#${patient!.test_no})`,
+      bodyHtml, pdfPath,
+    });
+  }
+
   function handleEmail() {
     if (!patient?.email) { alert('This patient has no email address on file.'); return; }
-    const host = settings.smtp_host, port = settings.smtp_port, user = settings.smtp_user, pass = settings.smtp_pass;
-    if (!host || !user || !pass) {
+    if (!settings.smtp_host || !settings.smtp_user || !settings.smtp_pass) {
       alert('Email is not set up yet. Go to Settings → Email and enter the lab Gmail address + app password.');
       return;
     }
     withLog('email', patient.email, 'email', async () => {
-      const pdfPath = (await makePdf()) || null;   // "" (browser) → null so we don't attach a missing file
-      const tech = settings.technician_name ?? 'Rajesh Kumar (Vicky)';
-      const bodyHtml = `<div style="font-family:Inter,Arial,sans-serif;color:#1a1a1e">
-        <p>Dear ${patient.title} ${patient.name},</p>
-        <p>Please find attached your laboratory report (${panelSummary()}) from
-        <b style="color:#7b1b1b">Sharma Clinical Laboratory</b>, Nangal Bhur, Pathankot.</p>
-        <p style="color:#6b7280;font-size:13px">This is a computer-generated report. For queries, contact the laboratory.</p>
-        <p style="margin-top:18px">— ${tech}<br/>${settings.technician_qual ?? 'DMLT (PTU)'}</p>
-      </div>`;
-      await sendEmail({
-        host, port: parseInt(port, 10) || 587, username: user, password: pass,
-        to: patient.email!, subject: `Lab Report — ${patient.title} ${patient.name} (#${patient.test_no})`,
-        bodyHtml, pdfPath,
-      });
+      await emailCore();
       alert('Email sent successfully.');
     });
   }
@@ -273,7 +303,7 @@ export function ReportPreviewPage() {
             <div
               id="report-print-area"
               className={cn("report-sheet bg-white mx-auto shadow-sm relative", !printLetterhead && "no-letterhead")}
-              style={{ width: '210mm', minHeight: '297mm', padding: '12mm', fontFamily: 'Georgia, "Times New Roman", serif', ['--pre-top' as string]: `${preTop}mm`, ['--pre-bottom' as string]: `${preBottom}mm` }}
+              style={{ width: '210mm', minHeight: '297mm', padding: '12mm', fontFamily: '"Helvetica Neue", Arial, "Liberation Sans", system-ui, sans-serif', color: '#111', WebkitFontSmoothing: 'antialiased', ['--pre-top' as string]: `${preTop}mm`, ['--pre-bottom' as string]: `${preBottom}mm` }}
             >
               {showWatermark && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden" aria-hidden>

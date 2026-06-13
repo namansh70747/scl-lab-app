@@ -11,6 +11,15 @@ export async function logDelivery(
   );
 }
 
+/** True if this patient already had a successful delivery on the given channel (dedupe auto-send). */
+export async function hasDelivered(patientId: number, channel: string): Promise<boolean> {
+  const rows = await dbQuery<{ n: number }>(
+    "SELECT COUNT(*) as n FROM delivery_log WHERE patient_id=? AND channel=? AND status IN ('sent','delivered')",
+    [patientId, channel]
+  );
+  return (rows[0]?.n ?? 0) > 0;
+}
+
 export async function getPendingDeliveries(): Promise<(DeliveryLog & { patient_name: string; test_no: number })[]> {
   return dbQuery(
     `SELECT dl.*, p.name as patient_name, p.test_no, p.phone
