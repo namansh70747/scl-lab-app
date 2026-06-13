@@ -17,7 +17,7 @@ import { getHistograms } from "@/lib/queries/analyzer";
 import { HistogramRow } from "@/components/report/Histogram";
 import { OrderWithResult, Panel } from "@/types";
 import { ChevronLeft, Printer, FileDown, MessageCircle, Mail, Check, ZoomIn, ZoomOut, Smartphone } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { cn } from "@/lib/utils";
 import { SCLLogo } from "@/components/common/SCLLogo";
 
@@ -58,6 +58,7 @@ export function ReportPreviewPage() {
   const [printLetterhead, setPrintLetterhead] = useState(() => localStorage.getItem('scl_print_letterhead') === '1');
   const [preTop, setPreTop] = useState(() => Number(localStorage.getItem('scl_pre_top') ?? 40));
   const [preBottom, setPreBottom] = useState(() => Number(localStorage.getItem('scl_pre_bottom') ?? 24));
+  const [separatePages, setSeparatePages] = useState(() => localStorage.getItem('scl_separate_pages') === '1');
   const autoEmailTried = useRef(false);
 
   const { data: patient } = useQuery({ queryKey: ['patient', pid], queryFn: () => getPatientById(pid) });
@@ -151,6 +152,44 @@ export function ReportPreviewPage() {
     if (!patient) return '';
     return displayRange(findRange(o.ranges, patient.sex, patientAgeDays(patient.age, patient.age_unit)));
   }
+
+  // Shared report-table fragments (used by both grouped and one-per-page layouts).
+  const renderHead = () => (
+    <thead>
+      <tr>
+        <th className="text-left pb-1 pr-2 font-bold text-black text-[12.5px]">Test Name</th>
+        <th className="text-left pb-1 px-2 font-bold text-black text-[12.5px] w-28">Results</th>
+        <th className="text-left pb-1 px-2 font-bold text-black text-[12.5px] w-20">Units</th>
+        <th className="text-left pb-1 pl-2 font-bold text-black text-[12.5px] w-36">Normal Ranges</th>
+      </tr>
+    </thead>
+  );
+  const renderRows = (rows: OrderWithResult[]) => rows.map(o => {
+    const value = resultValue(o);
+    const abnormal = flagOf(o) !== '';
+    return (
+      <tr key={o.order.id}>
+        <td className="py-[3px] pr-2 text-gray-950">{o.test.name}</td>
+        <td className={cn("py-[3px] px-2 tabular-nums text-gray-950", abnormal && "font-bold")}>{value || '—'}</td>
+        <td className="py-[3px] px-2 text-gray-800">{o.test.unit && o.test.unit !== '—' ? o.test.unit : ''}</td>
+        <td className="py-[3px] pl-2 text-gray-800">{rangeText(o)}</td>
+      </tr>
+    );
+  });
+  const renderNotes = (rows: OrderWithResult[]) => {
+    const note = rows.find(r => r.test.interpretation_note)?.test.interpretation_note;
+    const band = rows.map(r => r.ranges[0]?.band_text).find(Boolean);
+    return (
+      <>
+        {band && <div className="mt-1 text-[10px] text-gray-800 whitespace-pre-line">{band}</div>}
+        {note && (
+          <div className="mt-2 border border-gray-700 px-2.5 py-1.5 text-[9.5px] text-gray-900 leading-[1.5] whitespace-pre-line">
+            {note}
+          </div>
+        )}
+      </>
+    );
+  };
 
   async function withLog(channel: 'print' | 'pdf' | 'whatsapp_semi' | 'whatsapp_api' | 'email' | 'sms', target: string, key: string, fn: () => Promise<void> | void) {
     setBusy(key);
@@ -394,68 +433,55 @@ export function ReportPreviewPage() {
                 <p><strong>Report DATE :</strong> {formatDate(patient.report_time)}</p>
               </section>
 
-              {/* Results grouped by discipline → profile, faithful to the printed layout */}
+              {/* Results — grouped by discipline, or one profile per page when toggled */}
               <section className="relative mt-3">
-                {deptGroups.map((group, gi) => {
-                  const breakAfter = gi < deptGroups.length - 1 && group.panels.some(p => p.panel.page_break_after);
-                  return (
-                    <div key={group.dept} style={breakAfter ? { breakAfter: 'page' } : undefined} className="mb-4">
-                      <div className="text-center font-bold text-[13.5px] tracking-wide text-black underline underline-offset-2 mb-1.5">{group.dept}</div>
-                      <table className="w-full text-[12px] border-collapse">
-                        <thead>
-                          <tr>
-                            <th className="text-left pb-1 pr-2 font-bold text-black text-[12.5px]">Test Name</th>
-                            <th className="text-left pb-1 px-2 font-bold text-black text-[12.5px] w-28">Results</th>
-                            <th className="text-left pb-1 px-2 font-bold text-black text-[12.5px] w-20">Units</th>
-                            <th className="text-left pb-1 pl-2 font-bold text-black text-[12.5px] w-36">Normal Ranges</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                {separatePages
+                  ? sortedPanels.map(({ panel, orders: rows }, idx) => {
+                      const dept = deptOf(panel);
+                      return (
+                        <div key={panel.code} style={idx < sortedPanels.length - 1 ? { breakAfter: 'page' } : undefined} className="mb-4">
+                          <div className="text-center font-bold text-[13.5px] tracking-wide text-black underline underline-offset-2 mb-1">{dept}</div>
+                          {panel.report_heading !== dept && (
+                            <div className="text-center font-semibold text-[12px] text-black mb-1.5">{panel.report_heading}</div>
+                          )}
+                          <table className="w-full text-[12px] border-collapse">
+                            {renderHead()}
+                            <tbody>{renderRows(rows)}</tbody>
+                          </table>
+                          {renderNotes(rows)}
+                          {dept === 'HAEMATOLOGY' && <HistogramRow histos={histograms} />}
+                        </div>
+                      );
+                    })
+                  : deptGroups.map((group, gi) => {
+                      const breakAfter = gi < deptGroups.length - 1 && group.panels.some(p => p.panel.page_break_after);
+                      return (
+                        <div key={group.dept} style={breakAfter ? { breakAfter: 'page' } : undefined} className="mb-4">
+                          <div className="text-center font-bold text-[13.5px] tracking-wide text-black underline underline-offset-2 mb-1.5">{group.dept}</div>
+                          <table className="w-full text-[12px] border-collapse">
+                            {renderHead()}
+                            <tbody>
+                              {group.panels.map(({ panel, orders: rows }) => (
+                                <Fragment key={panel.code}>
+                                  {panel.report_heading !== group.dept && (
+                                    <tr>
+                                      <td colSpan={4} className="pt-2 pb-0.5 font-bold text-[12.5px] text-black underline underline-offset-2">
+                                        {panel.report_heading}
+                                      </td>
+                                    </tr>
+                                  )}
+                                  {renderRows(rows)}
+                                </Fragment>
+                              ))}
+                            </tbody>
+                          </table>
                           {group.panels.map(({ panel, orders: rows }) => (
-                            <>
-                              {panel.report_heading !== group.dept && (
-                                <tr key={`h-${panel.code}`}>
-                                  <td colSpan={4} className="pt-2 pb-0.5 font-bold text-[12.5px] text-black underline underline-offset-2">
-                                    {panel.report_heading}
-                                  </td>
-                                </tr>
-                              )}
-                              {rows.map(o => {
-                                const value = resultValue(o);
-                                const abnormal = flagOf(o) !== '';
-                                return (
-                                  <tr key={o.order.id}>
-                                    <td className="py-[3px] pr-2 text-gray-950">{o.test.name}</td>
-                                    <td className={cn("py-[3px] px-2 tabular-nums text-gray-950", abnormal && "font-bold")}>
-                                      {value || '—'}
-                                    </td>
-                                    <td className="py-[3px] px-2 text-gray-800">{o.test.unit && o.test.unit !== '—' ? o.test.unit : ''}</td>
-                                    <td className="py-[3px] pl-2 text-gray-800">{rangeText(o)}</td>
-                                  </tr>
-                                );
-                              })}
-                            </>
+                            <Fragment key={`n-${panel.code}`}>{renderNotes(rows)}</Fragment>
                           ))}
-                        </tbody>
-                      </table>
-                      {group.panels.map(({ panel, orders: rows }) => {
-                        const note = rows.find(r => r.test.interpretation_note)?.test.interpretation_note;
-                        const band = rows.map(r => r.ranges[0]?.band_text).find(Boolean);
-                        return (
-                          <div key={`n-${panel.code}`}>
-                            {band && <div className="mt-1 text-[10px] text-gray-800 whitespace-pre-line">{band}</div>}
-                            {note && (
-                              <div className="mt-2 border border-gray-700 px-2.5 py-1.5 text-[9.5px] text-gray-900 leading-[1.5] whitespace-pre-line">
-                                {note}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {group.dept === 'HAEMATOLOGY' && <HistogramRow histos={histograms} />}
-                    </div>
-                  );
-                })}
+                          {group.dept === 'HAEMATOLOGY' && <HistogramRow histos={histograms} />}
+                        </div>
+                      );
+                    })}
 
                 {comment && (
                   <div className="mt-2 text-[11px]"><strong>Comments :</strong> {comment}</div>
@@ -518,6 +544,7 @@ export function ReportPreviewPage() {
               <GapInput label="Bottom gap" value={preBottom} onChange={(v) => { setPreBottom(v); localStorage.setItem('scl_pre_bottom', String(v)); }} />
             </div>
           )}
+          <Toggle label="Each test on a new page" checked={separatePages} onChange={(v) => { setSeparatePages(v); localStorage.setItem('scl_separate_pages', v ? '1' : '0'); }} />
           <Toggle label="Signature" checked={showSignature} onChange={setShowSignature} />
           <Toggle label="Watermark" checked={showWatermark} onChange={setShowWatermark} />
         </div>
