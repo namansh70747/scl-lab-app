@@ -71,6 +71,12 @@ pub fn run() {
             sql: include_str!("../migrations/0011_eag_decimals.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 12,
+            description: "more_auto_calc",
+            sql: include_str!("../migrations/0012_more_auto_calc.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
