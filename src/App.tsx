@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { Suspense, lazy, Component, type ReactNode } from "react";
 import { useSession } from "@/lib/session";
 import { AppShell } from "@/app/AppShell";
@@ -44,6 +44,18 @@ function PageFallback() {
   );
 }
 
+// Key these pages by patient id so navigating between patients fully remounts them.
+// Otherwise per-instance refs (auto-send/auto-email latches) and in-progress edit state
+// leak across patients — causing missed or wrong-patient sends.
+function ResultEntryRoute() {
+  const { patientId } = useParams();
+  return <ResultEntryPage key={patientId} />;
+}
+function ReportRoute() {
+  const { patientId } = useParams();
+  return <ReportPreviewPage key={patientId} />;
+}
+
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const user = useSession(s => s.user);
   if (!user) return <Navigate to="/login" replace />;
@@ -76,8 +88,8 @@ export default function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="new-patient" element={<NewPatientPage />} />
-            <Route path="result-entry/:patientId" element={<ResultEntryPage />} />
-            <Route path="report/:patientId" element={<ReportPreviewPage />} />
+            <Route path="result-entry/:patientId" element={<ResultEntryRoute />} />
+            <Route path="report/:patientId" element={<ReportRoute />} />
             <Route path="patients" element={<PatientsPage />} />
             <Route path="test-master" element={<RequireAdmin><TestMasterPage /></RequireAdmin>} />
             <Route path="doctors" element={<DoctorsPage />} />
