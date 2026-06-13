@@ -47,6 +47,12 @@ pub fn run() {
             sql: include_str!("../migrations/0007_whatsapp_cloud.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 8,
+            description: "no_balance_due",
+            sql: include_str!("../migrations/0008_no_balance_due.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -70,6 +76,7 @@ pub fn run() {
             commands::tcp_capture,
             commands::whatsapp_send_document,
             commands::copy_file_to_clipboard,
+            commands::save_text_file,
             commands::app_version,
         ])
         .run(tauri::generate_context!())

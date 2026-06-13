@@ -74,11 +74,13 @@ export async function createPatient(input: NewPatientInput, userId: number): Pro
       }
     }
 
-    // Bill (net/balance are generated columns)
+    // Bill (net/balance are generated columns). The lab collects payment manually at the
+    // counter, so the bill is recorded as fully received — there is no balance-due tracking.
     const total = Object.values(input.prices).reduce((a, b) => a + b, 0);
+    const received = Math.max(0, total - input.concession);
     await db.execute(
       'INSERT INTO bills(patient_id,total,concession,received,mode) VALUES(?,?,?,?,?)',
-      [patientId, total, input.concession, input.received, input.mode]
+      [patientId, total, input.concession, received, input.mode]
     );
 
     // Advance the receipt number
@@ -212,6 +214,53 @@ export async function getPatientHistory(name: string, phone: string): Promise<Pa
 export async function getBill(patientId: number): Promise<Bill | null> {
   const rows = await dbQuery<Bill>('SELECT * FROM bills WHERE patient_id=?', [patientId]);
   return rows[0] ?? null;
+}
+
+/**
+ * Add more tests to an already-registered patient (e.g. the patient asks for another test).
+ * New orders are appended (bundles expand like at registration) and the bill grows; the
+ * extra amount is recorded as received too, so there is no balance due.
+ */
+export async function addTestsToPatient(
+  patientId: number, testIds: number[], prices: Record<number, number>
+): Promise<void> {
+  if (!testIds.length) return;
+  const db = await getDb();
+  const existing = await dbQuery<{ test_id: number }>('SELECT test_id FROM orders WHERE patient_id=?', [patientId]);
+  const have = new Set(existing.map(e => e.test_id));
+  const sampleRow = await dbQuery<{ sample_id: string }>('SELECT sample_id FROM orders WHERE patient_id=? LIMIT 1', [patientId]);
+  const sampleId = sampleRow[0]?.sample_id ?? String(patientId);
+
+  const meta = await dbQuery<{ id: number; is_panel: number; panel_id: number }>(
+    `SELECT id, is_panel, panel_id FROM tests WHERE id IN (${testIds.map(() => '?').join(',')})`, testIds
+  );
+  const metaById = new Map(meta.map(m => [m.id, m]));
+
+  let addedTotal = 0;
+  for (const testId of testIds) {
+    if (have.has(testId)) continue;
+    const price = prices[testId] ?? 0;
+    const m = metaById.get(testId);
+    if (m?.is_panel) {
+      await db.execute('INSERT INTO orders(patient_id,test_id,price_charged,sample_id,not_done) VALUES(?,?,?,?,1)', [patientId, testId, price, sampleId]);
+      have.add(testId); addedTotal += price;
+      const children = await dbQuery<{ id: number }>('SELECT id FROM tests WHERE panel_id=? AND enabled=1 AND is_panel=0', [m.panel_id]);
+      for (const child of children) {
+        if (have.has(child.id)) continue;
+        await db.execute('INSERT INTO orders(patient_id,test_id,price_charged,sample_id) VALUES(?,?,?,?)', [patientId, child.id, 0, sampleId]);
+        have.add(child.id);
+      }
+    } else {
+      await db.execute('INSERT INTO orders(patient_id,test_id,price_charged,sample_id) VALUES(?,?,?,?)', [patientId, testId, price, sampleId]);
+      have.add(testId); addedTotal += price;
+    }
+  }
+  if (addedTotal > 0) {
+    await db.execute(
+      'UPDATE bills SET total = total + ?, received = received + ?, updated_at=CURRENT_TIMESTAMP WHERE patient_id=?',
+      [addedTotal, addedTotal, patientId]
+    );
+  }
 }
 
 export async function updateBill(patientId: number, data: Partial<Bill>): Promise<void> {

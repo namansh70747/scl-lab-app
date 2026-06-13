@@ -89,7 +89,6 @@ export function NewPatientPage() {
 
   // Billing
   const [concession, setConcession] = useState(0);
-  const [received, setReceived] = useState(0);
   const [mode, setMode] = useState<PaymentMode>("CASH");
 
   // Test selection
@@ -120,7 +119,6 @@ export function NewPatientPage() {
 
   const total = selectedTests.reduce((s, t) => s + t.price, 0);
   const net = Math.max(0, total - concession);
-  const balance = Math.max(0, net - received);
 
   function addTest(test: Test) {
     if (selectedTests.find(t => t.test.id === test.id)) return;
@@ -185,7 +183,7 @@ export function NewPatientPage() {
         sex, phone, email, address, doctor_id: doctorId,
         collected_at: collectedAt, sample_time: nowISO(),
         test_ids: selectedTests.map(t => t.test.id),
-        prices, concession, received, mode,
+        prices, concession, received: net, mode,
       }, user!.id);
 
       qc.invalidateQueries({ queryKey: ['today-patients'] });
@@ -457,19 +455,8 @@ export function NewPatientPage() {
                 />
               </div>
               {errors.concession && <p className="text-[12px] text-[#b91c1c] text-right">{errors.concession}</p>}
-              <BillRow label="Net Payable" value={`₹${net}`} bold />
-              <div className="flex items-center justify-between py-0.5">
-                <label className="text-[13.5px] text-[#5d5953]">Received (₹)</label>
-                <input
-                  type="number"
-                  value={received}
-                  onChange={e => setReceived(parseFloat(e.target.value) || 0)}
-                  min={0}
-                  className="field !w-28 text-right tabular-nums !py-1.5"
-                />
-              </div>
               <div className="border-t border-[#f1efec] pt-2">
-                <BillRow label="Balance" value={`₹${balance}`} bold={balance > 0} danger={balance > 0} />
+                <BillRow label="Amount" value={`₹${net}`} bold />
               </div>
               <div className="pt-1.5">
                 <label className={labelCls}>Payment Mode</label>

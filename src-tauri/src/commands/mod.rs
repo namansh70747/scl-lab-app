@@ -560,6 +560,22 @@ pub fn copy_file_to_clipboard(path: String) -> Result<(), String> {
     }
 }
 
+/// Write a UTF-8 text file (e.g. a CSV export), creating parent directories. Returns the
+/// absolute path. Used because the webview blocks the browser's anchor-download trick.
+#[tauri::command]
+pub fn save_text_file(content: String, out_path: String) -> Result<String, String> {
+    let out = PathBuf::from(&out_path);
+    if let Some(parent) = out.parent() {
+        if !parent.as_os_str().is_empty() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create folder {}: {e}", parent.display()))?;
+        }
+    }
+    std::fs::write(&out, content)
+        .map_err(|e| format!("Failed to write {}: {e}", out.display()))?;
+    Ok(out.to_string_lossy().into_owned())
+}
+
 /// Return the app's package version.
 #[tauri::command]
 pub fn app_version() -> String {

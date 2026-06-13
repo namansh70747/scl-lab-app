@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getPatientById, getBill, updateBill } from "@/lib/queries/patients";
+import { useQuery } from "@tanstack/react-query";
+import { getPatientById, getBill } from "@/lib/queries/patients";
 import { getOrdersWithResults, getReportComment } from "@/lib/queries/results";
 import { listPanels } from "@/lib/queries/tests";
 import { getAllSettings } from "@/lib/queries/settings";
@@ -9,7 +9,7 @@ import { computeCalculated } from "@/lib/calc";
 import { computeFlag, patientAgeDays, findRange, displayRange } from "@/lib/flags";
 import { generateReportQR } from "@/lib/qr";
 import { revealInFolder } from "@/lib/printing";
-import { saveReportPdf, printReportPdf } from "@/lib/pdf";
+import { saveReportPdf } from "@/lib/pdf";
 import { sendEmail } from "@/lib/email";
 import { buildWhatsAppMessage, sendWhatsAppSemi } from "@/lib/whatsapp";
 import { formatDate } from "@/lib/format";
@@ -45,7 +45,6 @@ export function ReportPreviewPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const pid = parseInt(patientId ?? '0');
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [sent, setSent] = useState<Record<string, boolean>>({});
   const [zoom, setZoom] = useState(100);
   const [showWatermark, setShowWatermark] = useState(true);
@@ -54,7 +53,9 @@ export function ReportPreviewPage() {
   // Pre-printed letterhead paper: when OFF, the physical print drops the header/footer
   // and shifts the body down so the data lands inside the paper's printed frame. Digital
   // copies (PDF, WhatsApp, email) always include the full letterhead.
-  const [printLetterhead, setPrintLetterhead] = useState(true);
+  // Default OFF — the lab prints on pre-printed letterhead paper, so the digital header is
+  // hidden and the body is positioned to land inside the paper's frame. Toggle ON for plain paper.
+  const [printLetterhead, setPrintLetterhead] = useState(() => localStorage.getItem('scl_print_letterhead') === '1');
   const [preTop, setPreTop] = useState(() => Number(localStorage.getItem('scl_pre_top') ?? 40));
   const [preBottom, setPreBottom] = useState(() => Number(localStorage.getItem('scl_pre_bottom') ?? 24));
   const autoEmailTried = useRef(false);
@@ -194,11 +195,12 @@ export function ReportPreviewPage() {
   const panelSummary = () => sortedPanels.map(p => p.panel.report_heading).join(', ') || 'Lab Report';
 
   function handlePrint() {
-    withLog('print', settings.printer_name ?? 'Default printer', 'print', async () => {
-      // Renders the report as shown (with/without letterhead per the toggle) and opens it
-      // in the PDF viewer to print — reliable where the webview's window.print() does nothing.
-      await printReportPdf({ element: reportEl(), testNo: patient!.test_no, name: patient!.name });
-    });
+    // Open the OS print dialog directly (synchronous, on the user gesture) so it behaves
+    // like Ctrl/⌘+P in Word — the dialog lets you pick the connected printer. The on-screen
+    // DOM is printed, so the letterhead toggle (pre-printed paper) is respected.
+    window.print();
+    logDelivery(pid, 'print', settings.printer_name ?? 'Default printer', 'sent').catch(() => {});
+    setSent(s => ({ ...s, print: true }));
   }
 
   function handlePdf() {
@@ -506,7 +508,7 @@ export function ReportPreviewPage() {
 
         <div className="card p-4 space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d]">Layout</p>
-          <Toggle label="Print lab letterhead" checked={printLetterhead} onChange={setPrintLetterhead} />
+          <Toggle label="Print lab letterhead" checked={printLetterhead} onChange={(v) => { setPrintLetterhead(v); localStorage.setItem('scl_print_letterhead', v ? '1' : '0'); }} />
           {!printLetterhead && (
             <div className="rounded-lg bg-[#f1efec] px-3 py-2.5 space-y-2">
               <p className="text-[10.5px] text-[#6b6259] leading-snug">
@@ -525,32 +527,7 @@ export function ReportPreviewPage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d] mb-1">Billing</p>
             <Row k="Total" v={`₹${bill.total}`} />
             {bill.concession > 0 && <Row k="Concession" v={`− ₹${bill.concession}`} />}
-            <Row k="Net" v={`₹${bill.net}`} />
-            <Row k="Received" v={`₹${bill.received}`} />
-            <Row k="Balance" v={`₹${bill.balance}`} danger={bill.balance > 0} />
-            {bill.balance > 0 && (
-              <button
-                onClick={async () => {
-                  const raw = window.prompt(`Balance due is ₹${bill.balance}. Enter amount received now:`, String(bill.balance));
-                  if (raw == null) return;
-                  const amt = parseFloat(raw);
-                  if (isNaN(amt) || amt <= 0) { alert('Enter a valid amount.'); return; }
-                  if (amt > bill.balance) { alert(`Amount cannot exceed the balance of ₹${bill.balance}.`); return; }
-                  await updateBill(pid, { received: bill.received + amt });
-                  // refresh the due everywhere it is shown
-                  await Promise.all([
-                    queryClient.invalidateQueries({ queryKey: ['bill', pid] }),
-                    queryClient.invalidateQueries({ queryKey: ['patients-search'] }),
-                    queryClient.invalidateQueries({ queryKey: ['today-patients'] }),
-                    queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
-                  ]);
-                  alert(`Payment of ₹${amt} recorded. Balance is now ₹${Math.max(0, bill.balance - amt)}.`);
-                }}
-                className="mt-2 w-full text-[12px] font-medium text-[#7b1b1b] border border-[#e3c9c9] bg-[#fbf3f3] rounded-lg px-3 py-1.5 hover:bg-[#f7e9e9]"
-              >
-                Record payment
-              </button>
-            )}
+            {bill.concession > 0 && <Row k="Amount" v={`₹${bill.net}`} />}
           </div>
         )}
       </aside>

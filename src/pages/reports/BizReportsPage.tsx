@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Download, FileBarChart2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { invoke, isTauri } from "@/lib/tauri";
 import {
   dayBook,
   monthly,
@@ -29,17 +30,29 @@ const TABS: { id: Tab; label: string }[] = [
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-function downloadCSV(filename: string, rows: Record<string, unknown>[]) {
+async function downloadCSV(filename: string, rows: Record<string, unknown>[]) {
   const csv = toCSV(rows);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  if (rows.length === 0) { alert("Nothing to export for this selection."); return; }
+  if (!isTauri()) {
+    // browser fallback: anchor download
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return;
+  }
+  // Tauri: the anchor-download is blocked, so write the file and reveal it.
+  try {
+    const { documentDir, join } = await import("@tauri-apps/api/path");
+    const outPath = await join(await documentDir(), "SCL Reports", "exports", filename);
+    await invoke<string>("save_text_file", { content: csv, outPath });
+    await invoke("reveal_in_folder", { path: outPath });
+    alert(`Exported to:\n${outPath}`);
+  } catch (e) {
+    alert(`Could not export CSV: ${String(e)}`);
+  }
 }
 
 // ---- shared UI bits ------------------------------------------------------

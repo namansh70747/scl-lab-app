@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getPatientById } from "@/lib/queries/patients";
+import { getPatientById, addTestsToPatient } from "@/lib/queries/patients";
 import { getOrdersWithResults, saveResult, approvePatient, markNotDone, unlockResult, getReportComment, saveReportComment } from "@/lib/queries/results";
-import { listPanels } from "@/lib/queries/tests";
+import { listPanels, searchTests } from "@/lib/queries/tests";
 import { useSession } from "@/lib/session";
-import { OrderWithResult, Panel } from "@/types";
+import { OrderWithResult, Panel, Test } from "@/types";
 import { computeCalculated } from "@/lib/calc";
 import { computeFlag, patientAgeDays, findRange, displayRange } from "@/lib/flags";
 import { getAllSettings } from "@/lib/queries/settings";
@@ -13,7 +13,7 @@ import { readAnalyzerConfigured } from "@/lib/serial";
 import { matchToOrders, type AnalyzerMatch, type AnalyzerReading } from "@/lib/astm";
 import { saveHistograms } from "@/lib/queries/analyzer";
 import { cn } from "@/lib/utils";
-import { Check, CheckCircle, ChevronLeft, FileText, Unlock, X, Cable } from "lucide-react";
+import { Check, CheckCircle, ChevronLeft, FileText, Unlock, X, Cable, Plus } from "lucide-react";
 
 export function ResultEntryPage() {
   const { patientId } = useParams<{ patientId: string }>();
@@ -27,6 +27,9 @@ export function ResultEntryPage() {
   const [localValues, setLocalValues] = useState<Record<number, string>>({});
   const [reading, setReading] = useState(false);
   const [analyzer, setAnalyzer] = useState<{ matches: AnalyzerMatch[]; reading: AnalyzerReading } | null>(null);
+  const [showAddTest, setShowAddTest] = useState(false);
+  const [addQuery, setAddQuery] = useState('');
+  const [addResults, setAddResults] = useState<Test[]>([]);
 
   const { data: patient } = useQuery({ queryKey: ['patient', pid], queryFn: () => getPatientById(pid) });
   const { data: orders = [] } = useQuery({ queryKey: ['orders', pid], queryFn: () => getOrdersWithResults(pid) });
@@ -109,9 +112,14 @@ export function ResultEntryPage() {
       await approvePatient(pid, user!.id);
     },
     onSuccess: () => {
+      // Refresh this patient AND every list that shows the status (dashboard, patients).
       qc.invalidateQueries({ queryKey: ['orders', pid] });
       qc.invalidateQueries({ queryKey: ['patient', pid] });
       qc.invalidateQueries({ queryKey: ['comment', pid] });
+      qc.invalidateQueries({ queryKey: ['today-patients'] });
+      qc.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      qc.invalidateQueries({ queryKey: ['patients-search'] });
+      qc.invalidateQueries({ queryKey: ['pending-deliveries'] });
       setShowApprove(false);
       navigate(`/report/${pid}`);
     },
@@ -129,6 +137,8 @@ export function ResultEntryPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders', pid] });
       qc.invalidateQueries({ queryKey: ['patient', pid] });
+      qc.invalidateQueries({ queryKey: ['today-patients'] });
+      qc.invalidateQueries({ queryKey: ['patients-search'] });
     },
     onError: (e) => { if (String(e).includes('cancelled')) return; alert(String(e)); },
   });
@@ -195,6 +205,28 @@ export function ResultEntryPage() {
     }
   }
 
+  async function runAddSearch(q: string) {
+    setAddQuery(q);
+    if (q.trim().length < 1) { setAddResults([]); return; }
+    try { setAddResults((await searchTests(q.trim())).slice(0, 12)); }
+    catch { setAddResults([]); }
+  }
+
+  async function addTest(t: Test) {
+    try {
+      await addTestsToPatient(pid, [t.id], { [t.id]: t.price });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['orders', pid] }),
+        qc.invalidateQueries({ queryKey: ['bill', pid] }),
+        qc.invalidateQueries({ queryKey: ['today-patients'] }),
+        qc.invalidateQueries({ queryKey: ['patients-search'] }),
+      ]);
+      setShowAddTest(false); setAddQuery(''); setAddResults([]);
+    } catch (e) {
+      alert(String(e));
+    }
+  }
+
   async function applyAnalyzer() {
     if (!analyzer) return;
     const next = { ...localValues };
@@ -257,6 +289,9 @@ export function ResultEntryPage() {
             )}
           </div>
           <div className="flex items-center gap-2.5 shrink-0">
+            <button onClick={() => setShowAddTest(true)} className="btn btn-secondary" title="Add another test to this patient">
+              <Plus size={15} strokeWidth={1.8} /> Add test
+            </button>
             {isApproved ? (
               <>
                 {can('unlock_results') && (
@@ -430,6 +465,47 @@ export function ResultEntryPage() {
           className="field resize-y"
         />
       </div>
+
+      {/* Add-test dialog — append more tests to this patient; the report grows accordingly */}
+      {showAddTest && (
+        <div
+          className="fixed inset-0 z-50 bg-[#1a1208]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
+          onClick={() => { setShowAddTest(false); setAddQuery(''); setAddResults([]); }}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-md p-6 animate-scale-in shadow-[var(--shadow-pop)]"
+            onClick={e => e.stopPropagation()}
+            role="dialog" aria-modal="true"
+          >
+            <h3 className="text-[16px] font-semibold text-[#1a1a1e] mb-1">Add a test</h3>
+            <p className="text-[13px] text-[#5d5953] mb-3">Search and tap a test to add it to this patient. The bill and report update automatically.</p>
+            <input
+              autoFocus
+              value={addQuery}
+              onChange={e => runAddSearch(e.target.value)}
+              placeholder="Search test name or code…"
+              className="field w-full mb-3"
+            />
+            <div className="max-h-72 overflow-auto">
+              {addResults.length === 0 ? (
+                <p className="text-[13px] text-[#a8a29b] py-4 text-center">{addQuery ? 'No matching tests.' : 'Type to search…'}</p>
+              ) : addResults.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => addTest(t)}
+                  className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-[#faf9f7] text-left"
+                >
+                  <span className="text-[14px] text-[#1a1a1e]">{t.name} <span className="text-[12px] text-[#a8a29b]">({t.code})</span></span>
+                  <span className="text-[13px] tabular-nums text-[#5d5953]">₹{t.price}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end mt-4">
+              <button onClick={() => { setShowAddTest(false); setAddQuery(''); setAddResults([]); }} className="btn btn-secondary">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Analyzer review dialog — staff confirm before values touch the patient */}
       {analyzer && (
