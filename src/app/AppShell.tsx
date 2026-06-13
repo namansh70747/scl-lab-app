@@ -9,9 +9,7 @@ import { cn } from "@/lib/utils";
 import { CommandPalette } from "@/app/CommandPalette";
 import { KeyboardShortcuts } from "@/app/KeyboardShortcuts";
 import { maybeDailyBackup } from "@/lib/backup";
-import { SCLMark } from "@/components/common/SCLLogo";
-import { useQuery } from "@tanstack/react-query";
-import { getAllSettings } from "@/lib/queries/settings";
+import { NamAstaMark } from "@/components/common/NamAstaLogo";
 import { getUserById } from "@/lib/queries/auth";
 
 const navItems = [
@@ -36,7 +34,6 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
-  const { data: settings = {} } = useQuery({ queryKey: ["settings"], queryFn: getAllSettings });
 
   useEffect(() => {
     const on = () => setOnline(true), off = () => setOnline(false);
@@ -82,13 +79,11 @@ export function AppShell() {
 
         {/* brand */}
         <div className={cn("relative flex items-center gap-3 h-[64px] px-4", collapsed && "justify-center px-0")}>
-          {settings.logo_data
-            ? <span className="inline-flex items-center justify-center rounded-xl bg-white px-1.5 py-1 shadow-lg"><img src={settings.logo_data} alt="SCL" style={{ height: collapsed ? 26 : 30, width: "auto" }} className="object-contain" /></span>
-            : <SCLMark size={collapsed ? 34 : 38} glow />}
+          <NamAstaMark size={collapsed ? 34 : 38} glow />
           {!collapsed && (
             <div className="min-w-0 leading-tight">
-              <p className="text-[13.5px] font-bold text-white/95 truncate tracking-wide">Sharma Clinical</p>
-              <p className="text-[10px] text-white/40 font-semibold tracking-[0.2em] uppercase">Laboratory</p>
+              <p className="text-[13.5px] font-bold text-white/95 truncate tracking-wide">NamAsta</p>
+              <p className="text-[10px] text-white/40 font-semibold tracking-[0.2em] uppercase">Diagnostics</p>
             </div>
           )}
         </div>

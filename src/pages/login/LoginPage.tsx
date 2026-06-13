@@ -10,7 +10,7 @@ import {
   Eye, EyeOff, Lock, ShieldCheck, Zap, Database, Loader2,
   ArrowRight, AlertCircle, CheckCircle2, UserRound,
 } from "lucide-react";
-import { SCLMark } from "@/components/common/SCLLogo";
+import { NamAstaMark } from "@/components/common/NamAstaLogo";
 import { getAllSettings } from "@/lib/queries/settings";
 
 export function LoginPage() {
@@ -108,12 +108,10 @@ export function LoginPage() {
       {/* ── Brand hero (left) ── */}
       <aside className="relative hidden lg:flex flex-col justify-between p-14">
         <div className="relative flex items-center gap-3.5">
-          {settings.logo_data
-            ? <span className="bg-white rounded-2xl px-3 py-2 shadow-lg"><img src={settings.logo_data} alt="SCL" style={{ height: 30, width: "auto" }} className="object-contain" /></span>
-            : <SCLMark size={52} glow />}
+          <NamAstaMark size={52} glow />
           <div className="leading-tight">
-            <p className="font-bold tracking-wide text-white/95">Sharma Clinical Laboratory</p>
-            <p className="text-[11px] text-white/40 tracking-[0.18em] uppercase">Fully Computerised Hi-Tech Lab</p>
+            <p className="font-bold tracking-wide text-white/95">NamAsta Diagnostics</p>
+            <p className="text-[11px] text-white/40 tracking-[0.18em] uppercase">Laboratory Management Suite</p>
           </div>
         </div>
 
@@ -145,10 +143,8 @@ export function LoginPage() {
         <div className="w-full max-w-sm rounded-3xl border border-white/10 glass-dark p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] animate-pop-in">
           {/* mobile logo */}
           <div className="lg:hidden flex flex-col items-center mb-7">
-            {settings.logo_data
-              ? <img src={settings.logo_data} alt="SCL" style={{ height: 44, width: "auto" }} className="object-contain" />
-              : <SCLMark size={52} glow />}
-            <h1 className="mt-3 text-lg font-bold text-white">Sharma Clinical Laboratory</h1>
+            <NamAstaMark size={52} glow />
+            <h1 className="mt-3 text-lg font-bold text-white">NamAsta Diagnostics</h1>
           </div>
 
           {!pendingUser ? (
