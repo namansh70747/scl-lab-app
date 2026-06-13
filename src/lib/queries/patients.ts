@@ -11,8 +11,29 @@ export async function getNextTestNo(): Promise<number> {
 
 export async function createPatient(input: NewPatientInput, userId: number): Promise<number> {
   const db = await getDb();
-  const nextNo = await getNextTestNo();
   const sampleTime = input.sample_time || nowISO();
+
+  // Reserve the receipt number ATOMICALLY in one statement so two overlapping registrations
+  // can never grab the same test_no (which would fail the UNIQUE constraint). RETURNING gives
+  // back the number we just claimed.
+  let nextNo = NaN;
+  try {
+    const reserved = await db.select<{ n: number }[]>(
+      `UPDATE settings SET value = CAST(value AS INTEGER) + 1, updated_at=CURRENT_TIMESTAMP
+       WHERE key='next_test_no' RETURNING CAST(value AS INTEGER) - 1 AS n`
+    );
+    nextNo = reserved[0]?.n ?? NaN;
+  } catch { /* fall through to repair below */ }
+  if (!Number.isFinite(nextNo) || nextNo < 1) {
+    // Counter missing/corrupt — rebuild it from the highest existing test_no.
+    const mx = await db.select<{ m: number }[]>(`SELECT COALESCE(MAX(test_no), 0) AS m FROM patients`);
+    nextNo = (mx[0]?.m ?? 0) + 1;
+    await db.execute(
+      `INSERT INTO settings(key,value,updated_at) VALUES('next_test_no',?,CURRENT_TIMESTAMP)
+       ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP`,
+      [String(nextNo + 1)]
+    );
+  }
 
   // Insert the patient and capture its id from THIS statement's result (pool-safe;
   // never read last_insert_rowid() in a separate call — it can hit another connection).
@@ -93,12 +114,7 @@ export async function createPatient(input: NewPatientInput, userId: number): Pro
       [patientId, total, concession, received, input.mode]
     );
 
-    // Advance the receipt number
-    await db.execute(
-      `INSERT INTO settings(key,value,updated_at) VALUES('next_test_no',?,CURRENT_TIMESTAMP)
-       ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP`,
-      [String(nextNo + 1)]
-    );
+    // (Receipt number was already reserved atomically up-front.)
 
     // Audit
     await db.execute(
@@ -246,6 +262,20 @@ export async function addTestsToPatient(
   );
   const metaById = new Map(meta.map(m => [m.id, m]));
 
+  // Panels already billed as a bundle (existing orders + ones being added now). A member of
+  // such a panel is already paid for, so charge it ₹0 — never double-bill the patient.
+  const existingBundles = await dbQuery<{ panel_id: number }>(
+    `SELECT t.panel_id FROM orders o JOIN tests t ON o.test_id=t.id WHERE o.patient_id=? AND t.is_panel=1`,
+    [patientId]
+  );
+  const bundlePanelIds = new Set(existingBundles.map(r => r.panel_id));
+  for (const m of meta) if (m.is_panel) bundlePanelIds.add(m.panel_id);
+  const effPrice = (testId: number): number => {
+    const m = metaById.get(testId);
+    if (m && !m.is_panel && m.panel_id != null && bundlePanelIds.has(m.panel_id)) return 0;
+    return prices[testId] ?? 0;
+  };
+
   // Manual rollback (the pool has no cross-call transaction): if any insert or the
   // bill update fails partway, delete the rows we added so orders never desync from
   // the bill total. Mirrors createPatient's pattern.
@@ -269,8 +299,9 @@ export async function addTestsToPatient(
           have.add(child.id);
         }
       } else {
-        track(await db.execute('INSERT INTO orders(patient_id,test_id,price_charged,sample_id) VALUES(?,?,?,?)', [patientId, testId, price, sampleId]));
-        have.add(testId); addedTotal += price;
+        const ep = effPrice(testId);
+        track(await db.execute('INSERT INTO orders(patient_id,test_id,price_charged,sample_id) VALUES(?,?,?,?)', [patientId, testId, ep, sampleId]));
+        have.add(testId); addedTotal += ep;
       }
     }
     if (addedTotal > 0) {
