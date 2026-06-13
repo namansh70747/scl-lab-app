@@ -43,6 +43,58 @@ export function SCLLogo({ height = 40, color = "#1e3f8f", className }: {
 }
 
 /**
+ * Modern app mark — a gradient rounded "gem" tile with a stylised blood-drop carrying a
+ * heartbeat pulse: instantly reads "diagnostic lab", looks premium in the dark chrome and
+ * on the login. Used for on-screen brand surfaces; the printed report keeps the classic
+ * SCLLogo vector for letterhead fidelity.
+ */
+export function SCLMark({ size = 40, className, glow = false }: { size?: number; className?: string; glow?: boolean }) {
+  const id = "sclmark";
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      fill="none"
+      className={className}
+      role="img"
+      aria-label="SCL"
+      style={glow ? { filter: "drop-shadow(0 6px 16px rgba(99,102,241,0.45))" } : undefined}
+    >
+      <defs>
+        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#6d74f5" />
+          <stop offset="0.55" stopColor="#5b4be8" />
+          <stop offset="1" stopColor="#7b1b1b" />
+        </linearGradient>
+        <linearGradient id={`${id}-drop`} x1="24" y1="10" x2="24" y2="38" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ffffff" />
+          <stop offset="1" stopColor="#e7ecff" />
+        </linearGradient>
+      </defs>
+      {/* tile */}
+      <rect x="1" y="1" width="46" height="46" rx="13" fill={`url(#${id}-bg)`} />
+      <rect x="1" y="1" width="46" height="46" rx="13" fill="white" fillOpacity="0.04" />
+      <rect x="1.5" y="1.5" width="45" height="45" rx="12.5" stroke="white" strokeOpacity="0.14" />
+      {/* blood drop */}
+      <path
+        d="M24 11c4.6 5.2 8 9.3 8 13.6A8 8 0 0 1 16 24.6C16 20.3 19.4 16.2 24 11Z"
+        fill={`url(#${id}-drop)`}
+      />
+      {/* heartbeat pulse across the drop */}
+      <path
+        d="M17.5 25.2h3l1.7-3.4 2.4 5.3 1.9-3.1h3.2"
+        stroke="#6d34c9"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
+/**
  * The single brand mark used EVERYWHERE — sidebar, login, and the report header —
  * so the logo a patient sees on paper is identical to the one staff see in the app.
  * If a custom logo image has been uploaded in Settings → Branding it is used; otherwise
