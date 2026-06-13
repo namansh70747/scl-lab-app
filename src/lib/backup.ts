@@ -1,5 +1,6 @@
 import { invoke } from '@/lib/tauri';
 import { getSetting } from '@/lib/queries/settings';
+import { dbExecute } from '@/lib/db';
 
 /** Run the daily dual backup via the Rust `backup_now` command. Returns the list of
  *  written backup file paths (§4A.8). dest dirs come from settings. */
@@ -26,7 +27,14 @@ export async function maybeDailyBackup(): Promise<void> {
     const today = new Date().toISOString().slice(0, 10);
     if (last === today) return;
     await backupNow();
-    // last_backup_date is admin-set normally; write directly to avoid permission gate on startup.
+    // Record the date so we back up ONCE per calendar day. Write directly (not via
+    // setSetting, which is permission-gated) since startup may run before an admin
+    // session exists — otherwise the guard never advances and we'd re-backup every launch.
+    await dbExecute(
+      `INSERT INTO settings(key,value,updated_at) VALUES('last_backup_date',?,CURRENT_TIMESTAMP)
+       ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP`,
+      [today]
+    );
   } catch {
     /* never block startup on a backup failure; surfaced in Settings instead */
   }
