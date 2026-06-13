@@ -9,7 +9,7 @@ import { computeCalculated } from "@/lib/calc";
 import { computeFlag, patientAgeDays, findRange, displayRange } from "@/lib/flags";
 import { generateReportQR } from "@/lib/qr";
 import { revealInFolder } from "@/lib/printing";
-import { saveReportPdf } from "@/lib/pdf";
+import { saveReportPdf, printReportPdf } from "@/lib/pdf";
 import { sendEmail } from "@/lib/email";
 import { buildWhatsAppMessage, sendWhatsAppSemi } from "@/lib/whatsapp";
 import { formatDate } from "@/lib/format";
@@ -223,12 +223,19 @@ export function ReportPreviewPage() {
   const panelSummary = () => sortedPanels.map(p => p.panel.report_heading).join(', ') || 'Lab Report';
 
   function handlePrint() {
-    // Open the OS print dialog directly (synchronous, on the user gesture) so it behaves
-    // like Ctrl/⌘+P in Word — the dialog lets you pick the connected printer. The on-screen
-    // DOM is printed, so the letterhead toggle (pre-printed paper) is respected.
-    window.print();
-    logDelivery(pid, 'print', settings.printer_name ?? 'Default printer', 'sent').catch(() => {});
-    setSent(s => ({ ...s, print: true }));
+    const isWindows = /win/i.test(navigator.userAgent);
+    if (isWindows) {
+      // Windows WebView2 shows the native print dialog directly (like Ctrl+P in Word).
+      window.print();
+      logDelivery(pid, 'print', settings.printer_name ?? 'Default printer', 'sent').catch(() => {});
+      setSent(s => ({ ...s, print: true }));
+      return;
+    }
+    // macOS WKWebView ignores window.print(), so render the report to a PDF and open it in
+    // Preview — pressing ⌘P there shows the print dialog and lets you pick the printer.
+    withLog('print', settings.printer_name ?? 'Default printer', 'print', async () => {
+      await printReportPdf({ element: reportEl(), testNo: patient!.test_no, name: patient!.name });
+    });
   }
 
   function handlePdf() {

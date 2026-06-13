@@ -45,6 +45,31 @@ function safeName(s: string): string {
  * in the OS's default PDF viewer where the user presses Ctrl/⌘+P to print to the attached
  * printer. In a plain browser it falls back to window.print().
  */
+/** Build a one-page alignment test sheet and open it for printing (no popup needed). */
+export async function openPrintTestPage(printerName: string): Promise<void> {
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  pdf.setFontSize(16);
+  pdf.setTextColor(123, 27, 27);
+  pdf.text("SHARMA CLINICAL LABORATORY — Print test page", 12, 20);
+  pdf.setFontSize(11);
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`Target printer: ${printerName || "system default"}`, 12, 30);
+  pdf.text("If this prints cleanly with ~12 mm margins, the report layout will too.", 12, 38);
+  pdf.rect(12, 48, 186, 18);
+  pdf.text("Margins / alignment check — text should sit ~12 mm from each edge.", 16, 58);
+  if (!isTauri()) {
+    window.open(pdf.output("bloburl"), "_blank");
+    return;
+  }
+  const docDir = await documentDir();
+  const outPath = await join(docDir, "SCL Reports", "_print", "test-page.pdf");
+  const dataUri = pdf.output("datauristring");
+  const base64 = dataUri.substring(dataUri.indexOf(",") + 1);
+  await invoke<string>("save_pdf_bytes", { base64Data: base64, outPath });
+  const { open } = await import("@tauri-apps/plugin-shell");
+  await open(outPath);
+}
+
 export async function printReportPdf(opts: { element: HTMLElement; testNo: number; name: string }): Promise<void> {
   if (!isTauri()) {
     window.print();

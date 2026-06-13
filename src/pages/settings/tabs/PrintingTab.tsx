@@ -1,43 +1,30 @@
+import { useState } from "react";
 import { Save, Printer } from "lucide-react";
 import { Card, TabHeader, TextField, PrimaryButton, SecondaryButton, NoteBox } from "../ui";
 import { useSettingsForm } from "../useSettingsForm";
+import { openPrintTestPage } from "@/lib/pdf";
+import { errMessage } from "../toast";
 
 const KEYS = ["printer_name"];
 
 export function PrintingTab({ settings }: { settings: Record<string, string> }) {
   const f = useSettingsForm(settings, KEYS);
+  const [printing, setPrinting] = useState(false);
 
   async function onSave() {
     if (await f.save()) f.toast.success("Printing settings saved.");
   }
 
-  function printTestPage() {
-    const w = window.open("", "_blank", "width=600,height=700");
-    if (!w) {
-      f.toast.error("Could not open the print window. Please allow pop-ups.");
-      return;
+  async function printTestPage() {
+    setPrinting(true);
+    try {
+      await openPrintTestPage(f.get("printer_name"));
+      f.toast.success("Test page opened — press Ctrl/⌘+P in the viewer to print.");
+    } catch (e) {
+      f.toast.error(errMessage(e));
+    } finally {
+      setPrinting(false);
     }
-    const printer = f.get("printer_name") || "default printer";
-    w.document.write(`<!doctype html><html><head><title>SCL — Print test page</title>
-      <style>
-        body { font-family: system-ui, sans-serif; margin: 24px; color: #1f2937; }
-        h1 { color: #7a1f2b; font-size: 20px; }
-        .box { border: 1px solid #d1d5db; border-radius: 8px; padding: 16px; margin-top: 12px; }
-        .row { display:flex; justify-content:space-between; padding: 4px 0; border-bottom: 1px dashed #e5e7eb; font-size: 13px; }
-        .scale { height: 16px; background: linear-gradient(to right,#000 0%,#000 50%,#fff 50%,#fff 100%); border:1px solid #000; margin-top:8px; }
-      </style></head><body>
-      <h1>SHARMA CLINICAL LABORATORY — Print test page</h1>
-      <p style="font-size:13px">Target printer: <b>${escapeHtml(printer)}</b></p>
-      <div class="box">
-        <div class="row"><span>Margins / alignment check — text should sit ~12mm from each edge.</span><span>OK</span></div>
-        <div class="row"><span>Black density / greyscale ramp:</span><span></span></div>
-        <div class="scale"></div>
-      </div>
-      <p style="font-size:11px;margin-top:16px;color:#6b7280">If this prints cleanly, the report layout will too.</p>
-      </body></html>`);
-    w.document.close();
-    w.focus();
-    w.print();
   }
 
   return (
@@ -59,9 +46,9 @@ export function PrintingTab({ settings }: { settings: Record<string, string> }) 
       />
 
       <div>
-        <SecondaryButton onClick={printTestPage}>
+        <SecondaryButton onClick={printTestPage} disabled={printing}>
           <Printer size={15} strokeWidth={1.8} />
-          Print test page
+          {printing ? "Opening…" : "Print test page"}
         </SecondaryButton>
       </div>
 
@@ -71,8 +58,4 @@ export function PrintingTab({ settings }: { settings: Record<string, string> }) 
       </NoteBox>
     </Card>
   );
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 }
