@@ -45,10 +45,10 @@ export function LoginPage() {
     retry: false,
   });
 
-  // Pre-fill the actual account (the username they registered with) instead of a guessed
-  // "admin" — until the user types their own.
+  // Pre-fill the real registered account (admins first) instead of a guessed "admin", so the
+  // field is never wrong — until the user types/picks their own.
   useEffect(() => {
-    if (!usernameTouched && accounts.length === 1) setUsername(accounts[0].username);
+    if (!usernameTouched && accounts.length > 0) setUsername(accounts[0].username);
   }, [accounts, usernameTouched]);
 
   // Live lockout countdown — re-enables and clears the error automatically.
@@ -141,7 +141,7 @@ export function LoginPage() {
         </div>
 
         <p className="relative text-xs text-white/35">
-          {settings.lab_name ? `${settings.lab_name}${settings.address_line ? ` · ${settings.address_line}` : ''}` : 'NamAsta Diagnostics'} · v{version}
+          {settings.lab_name || 'NamAsta Diagnostics'} · v{version}
         </p>
       </aside>
 

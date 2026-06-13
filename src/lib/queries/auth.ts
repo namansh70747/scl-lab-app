@@ -51,7 +51,7 @@ export async function login(username: string, password: string): Promise<LoginRe
   const user = await getUserByUsername(username);
   // Unknown username = a typo, not a brute-force attempt: don't escalate lockout.
   if (!user) {
-    return { ok: false, error: `No account named "${username.trim()}". Pick an account below.` };
+    return { ok: false, error: `No account named "${username.trim()}" — check the spelling, or pick your account above.` };
   }
 
   if (isPlaceholderHash(user.password_hash)) {
