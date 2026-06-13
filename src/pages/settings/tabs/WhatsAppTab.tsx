@@ -44,7 +44,7 @@ export function WhatsAppTab({ settings }: { settings: Record<string, string> }) 
     try {
       await sendWhatsAppSemi(
         phone,
-        "Test message from Sharma Clinical Laboratory. If you can read this, WhatsApp delivery is working."
+        `Test message from ${f.get("lab_name") || "your laboratory"}. If you can read this, WhatsApp delivery is working.`
       );
       f.toast.success(`Opened WhatsApp for ${phone}.`);
     } catch (e) {

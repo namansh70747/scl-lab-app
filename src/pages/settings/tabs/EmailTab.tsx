@@ -34,9 +34,9 @@ export function EmailTab({ settings }: { settings: Record<string, string> }) {
         username: f.get("smtp_user"),
         password: f.get("smtp_pass"),
         to: recipient,
-        subject: "SCL — SMTP test email",
+        subject: "SMTP test email",
         bodyHtml:
-          "<p>This is a test email from <b>Sharma Clinical Laboratory</b>.</p><p>If you received this, your SMTP settings are working.</p>",
+          `<p>This is a test email from <b>${f.get("lab_name") || "your laboratory"}</b>.</p><p>If you received this, your SMTP settings are working.</p>`,
       });
       f.toast.success(`Test email sent to ${recipient}.`);
     } catch (e) {

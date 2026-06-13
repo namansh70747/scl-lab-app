@@ -62,7 +62,7 @@ export async function openPrintTestPage(printerName: string): Promise<void> {
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   pdf.setFontSize(16);
   pdf.setTextColor(123, 27, 27);
-  pdf.text("SHARMA CLINICAL LABORATORY — Print test page", 12, 20);
+  pdf.text("Printer alignment — test page", 12, 20);
   pdf.setFontSize(11);
   pdf.setTextColor(0, 0, 0);
   pdf.text(`Target printer: ${printerName || "system default"}`, 12, 30);

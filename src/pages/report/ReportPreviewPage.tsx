@@ -131,8 +131,8 @@ export function ReportPreviewPage() {
             pdfPath, filename: `SCL-Report-${patient.test_no}.pdf`,
             caption: buildWhatsAppMessage({
               title: patient.title, name: patient.name, tests: panelSummary(),
-              technicianName: settings.technician_name ?? 'Rajesh Kumar (Vicky)',
-              technicianQual: settings.technician_qual ?? 'DMLT', labName: settings.lab_name || 'the laboratory',
+              technicianName: settings.technician_name || settings.lab_name || 'the laboratory',
+              technicianQual: settings.technician_qual ?? '', labName: settings.lab_name || 'the laboratory',
             }),
           });
           await logDelivery(pid, 'whatsapp_api', `91${patient.phone}`, 'sent');
@@ -415,14 +415,14 @@ export function ReportPreviewPage() {
     // The whole point of the email is the attached report — never send "please find attached"
     // with nothing attached.
     if (!pdfPath) throw new Error('Could not generate the report PDF — email not sent.');
-    const tech = settings.technician_name ?? 'Rajesh Kumar (Vicky)';
-    const labName = settings.lab_name || 'Sharma Clinical Laboratory';
+    const labName = settings.lab_name || 'the laboratory';
+    const tech = settings.technician_name || labName;   // sign with the lab name if no signatory set — never Sharma
     const bodyHtml = `<div style="font-family:Inter,Arial,sans-serif;color:#14151c">
       <p>Dear ${esc(patient!.title)} ${esc(patient!.name)},</p>
       <p>Please find attached your laboratory report (${esc(panelSummary())}) from
       <b style="color:#7b1b1b">${esc(labName)}</b>${settings.address_line ? `, ${esc(settings.address_line)}` : ''}.</p>
       <p style="color:#6b7280;font-size:13px">This is a computer-generated report. For queries, contact the laboratory.</p>
-      <p style="margin-top:18px">— ${esc(tech)}<br/>${esc(settings.technician_qual ?? 'DMLT (PTU)')}</p>
+      <p style="margin-top:18px">— ${esc(tech)}<br/>${esc(settings.technician_qual ?? '')}</p>
     </div>`;
     await sendEmail({
       host, port: parseInt(port, 10) || 587, username: user, password: pass,

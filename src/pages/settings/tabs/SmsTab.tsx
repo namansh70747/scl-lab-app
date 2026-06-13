@@ -28,7 +28,7 @@ export function SmsTab({ settings }: { settings: Record<string, string> }) {
         senderId: f.get("sms_sender_id"),
         dltTemplateId: f.get("sms_dlt_template_id"),
         phone: num.trim(),
-        message: "Test SMS from Sharma Clinical Laboratory.",
+        message: `Test SMS from ${f.get("lab_name") || "your laboratory"}.`,
         vars: ["Test Patient", "0000"],
       });
       f.toast.success(`Test SMS sent to ${num.trim()}.`);
