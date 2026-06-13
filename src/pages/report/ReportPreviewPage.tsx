@@ -8,8 +8,8 @@ import { logDelivery, hasDelivered } from "@/lib/queries/delivery";
 import { computeCalculated } from "@/lib/calc";
 import { computeFlag, patientAgeDays, findRange, displayRange } from "@/lib/flags";
 import { generateReportQR } from "@/lib/qr";
-import { printReport, revealInFolder } from "@/lib/printing";
-import { saveReportPdf } from "@/lib/pdf";
+import { revealInFolder } from "@/lib/printing";
+import { saveReportPdf, printReportPdf } from "@/lib/pdf";
 import { sendEmail } from "@/lib/email";
 import { buildWhatsAppMessage, sendWhatsAppSemi } from "@/lib/whatsapp";
 import { formatDate } from "@/lib/format";
@@ -193,7 +193,13 @@ export function ReportPreviewPage() {
 
   const panelSummary = () => sortedPanels.map(p => p.panel.report_heading).join(', ') || 'Lab Report';
 
-  function handlePrint() { withLog('print', settings.printer_name ?? 'Default printer', 'print', () => printReport()); }
+  function handlePrint() {
+    withLog('print', settings.printer_name ?? 'Default printer', 'print', async () => {
+      // Renders the report as shown (with/without letterhead per the toggle) and opens it
+      // in the PDF viewer to print — reliable where the webview's window.print() does nothing.
+      await printReportPdf({ element: reportEl(), testNo: patient!.test_no, name: patient!.name });
+    });
+  }
 
   function handlePdf() {
     withLog('pdf', 'Documents/SCL Reports', 'pdf', async () => {
@@ -506,7 +512,14 @@ export function ReportPreviewPage() {
                   if (isNaN(amt) || amt <= 0) { alert('Enter a valid amount.'); return; }
                   if (amt > bill.balance) { alert(`Amount cannot exceed the balance of ₹${bill.balance}.`); return; }
                   await updateBill(pid, { received: bill.received + amt });
-                  await queryClient.invalidateQueries({ queryKey: ['bill', pid] });
+                  // refresh the due everywhere it is shown
+                  await Promise.all([
+                    queryClient.invalidateQueries({ queryKey: ['bill', pid] }),
+                    queryClient.invalidateQueries({ queryKey: ['patients-search'] }),
+                    queryClient.invalidateQueries({ queryKey: ['today-patients'] }),
+                    queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+                  ]);
+                  alert(`Payment of ₹${amt} recorded. Balance is now ₹${Math.max(0, bill.balance - amt)}.`);
                 }}
                 className="mt-2 w-full text-[12px] font-medium text-[#7b1b1b] border border-[#e3c9c9] bg-[#fbf3f3] rounded-lg px-3 py-1.5 hover:bg-[#f7e9e9]"
               >

@@ -39,6 +39,28 @@ function safeName(s: string): string {
 }
 
 /**
+ * Print path that works reliably inside the Tauri webview (where window.print() is a
+ * no-op on macOS): render the report EXACTLY as shown (honouring the letterhead toggle,
+ * so pre-printed paper gets the headerless layout), save it to a temp file, and open it
+ * in the OS's default PDF viewer where the user presses Ctrl/⌘+P to print to the attached
+ * printer. In a plain browser it falls back to window.print().
+ */
+export async function printReportPdf(opts: { element: HTMLElement; testNo: number; name: string }): Promise<void> {
+  if (!isTauri()) {
+    window.print();
+    return;
+  }
+  const pdf = await renderReportPdf(opts.element);   // as-shown — respects the no-letterhead toggle
+  const docDir = await documentDir();
+  const outPath = await join(docDir, "SCL Reports", "_print", `${opts.testNo}-${safeName(opts.name)}.pdf`);
+  const dataUri = pdf.output("datauristring");
+  const base64 = dataUri.substring(dataUri.indexOf(",") + 1);
+  await invoke<string>("save_pdf_bytes", { base64Data: base64, outPath });
+  const { open } = await import("@tauri-apps/plugin-shell");
+  await open(outPath);   // opens in the default PDF viewer → user prints to the connected printer
+}
+
+/**
  * Generate the report PDF and save it under Documents/SCL Reports/YYYY/MM/.
  * Returns the absolute saved path. In a plain browser (no Tauri) it triggers a
  * normal download and returns "".
