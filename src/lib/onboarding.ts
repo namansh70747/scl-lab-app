@@ -44,8 +44,9 @@ export async function completeSetup(input: SetupInput): Promise<User> {
   }
 
   // This lab's OWN letterhead/report identity, written ungated (no session yet). We also
-  // CLEAR the Sharma-specific seed extras (equipment list, footer test list, timings) so a
-  // new lab never inherits Sharma's details — they can add their own later in Settings.
+  // CLEAR every Sharma-specific seed value (equipment list, footer test list, timings AND
+  // the seeded sender email) so a new lab never inherits Sharma's details, never emails
+  // patients FROM Sharma's gmail, and starts clean — they add their own later in Settings.
   const settings: [string, string][] = [
     ["lab_name", input.labName.trim()],
     ["address_line", input.address.trim()],
@@ -55,6 +56,7 @@ export async function completeSetup(input: SetupInput): Promise<User> {
     ["technician_qual", input.inchargeQual.trim()],
     ["equipment_line", ""],
     ["footer_tests_line", ""],
+    ["smtp_user", ""],   // was seeded with Sharma's personal gmail — must not leak across tenants
     ["setup_done", "1"],
   ];
   for (const [k, v] of settings) {
@@ -64,6 +66,11 @@ export async function completeSetup(input: SetupInput): Promise<User> {
       [k, v]
     );
   }
+
+  // Drop the seeded referring doctors (Sharma's local Pathankot panel). This only ever runs
+  // at first-run setup of a brand-new install — before anyone can log in or add a doctor — so
+  // every row here is seed data. The new lab builds its own doctor list.
+  await dbExecute("DELETE FROM doctors");
 
   const rows = await dbQuery<User>("SELECT * FROM users WHERE username=? AND active=1", [username]);
   return rows[0];
