@@ -443,10 +443,13 @@ export function DoctorsPage() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["doctors"],
+    // Distinct from ['doctors','active'] (the active-only list used by registration) —
+    // sharing the bare ['doctors'] key served the wrong shape to whichever mounted first.
+    queryKey: ["doctors", "with-counts"],
     queryFn: listDoctorsWithCounts,
   });
 
+  // Prefix-invalidate so BOTH ['doctors','with-counts'] and ['doctors','active'] refresh.
   const invalidate = () => qc.invalidateQueries({ queryKey: ["doctors"] });
 
   const toggle = useMutation({

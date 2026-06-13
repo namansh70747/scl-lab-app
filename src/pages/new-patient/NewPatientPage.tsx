@@ -100,9 +100,10 @@ export function NewPatientPage() {
   // Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const submitting = useRef(false);   // synchronous double-submit guard (setSaving is async)
 
   const { data: nextNo } = useQuery({ queryKey: ['next-test-no'], queryFn: getNextTestNo });
-  const { data: doctors = [] } = useQuery({ queryKey: ['doctors'], queryFn: () => listDoctors() });
+  const { data: doctors = [] } = useQuery({ queryKey: ['doctors', 'active'], queryFn: () => listDoctors() });
   const { data: panels = [] } = useQuery({ queryKey: ['panels'], queryFn: listPanels });
   const { data: testResults = [] } = useQuery({
     queryKey: ['test-search', testQuery],
@@ -173,7 +174,9 @@ export function NewPatientPage() {
   }
 
   async function handleSave(andEnterResults = false) {
-    if (!validate() || saving) return;
+    if (submitting.current) return;   // block a second click in the same tick (duplicate patient)
+    if (!validate()) return;
+    submitting.current = true;
     setSaving(true);
     try {
       const prices: Record<number, number> = {};
@@ -190,11 +193,13 @@ export function NewPatientPage() {
       qc.invalidateQueries({ queryKey: ['today-patients'] });
       qc.invalidateQueries({ queryKey: ['dashboard-stats'] });
       qc.invalidateQueries({ queryKey: ['next-test-no'] });
+      qc.invalidateQueries({ queryKey: ['patients-search'] });   // so the new patient shows in the Patients list
 
       if (andEnterResults) navigate(`/result-entry/${patientId}`);
       else navigate('/dashboard');
     } catch (err) {
       setErrors({ _: String(err) });
+      submitting.current = false;   // allow retry only on failure (success navigates away)
     } finally {
       setSaving(false);
     }
@@ -421,7 +426,7 @@ export function NewPatientPage() {
                       type="number"
                       value={st.price}
                       onChange={e => {
-                        const p = parseFloat(e.target.value) || 0;
+                        const p = Math.max(0, parseFloat(e.target.value) || 0);
                         setSelectedTests(prev => prev.map(t => t.test.id === st.test.id ? { ...t, price: p } : t));
                       }}
                       className="w-16 bg-transparent text-right text-[13.5px] tabular-nums text-[#1a1a1e] border-0 border-b border-transparent transition-colors focus:border-maroon-600 focus:outline-none focus-visible:outline-none"
@@ -450,7 +455,7 @@ export function NewPatientPage() {
                 <input
                   type="number"
                   value={concession}
-                  onChange={e => setConcession(parseFloat(e.target.value) || 0)}
+                  onChange={e => setConcession(Math.max(0, Math.min(total, parseFloat(e.target.value) || 0)))}
                   min={0} max={total}
                   className={cn("field !w-28 text-right tabular-nums !py-1.5", errors.concession && "!border-[#dc2626]")}
                 />
