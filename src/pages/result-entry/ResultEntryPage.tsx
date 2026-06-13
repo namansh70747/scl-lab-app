@@ -9,7 +9,7 @@ import { OrderWithResult, Panel } from "@/types";
 import { computeCalculated } from "@/lib/calc";
 import { computeFlag, patientAgeDays, findRange, displayRange } from "@/lib/flags";
 import { getAllSettings } from "@/lib/queries/settings";
-import { readAnalyzer } from "@/lib/serial";
+import { readAnalyzerConfigured } from "@/lib/serial";
 import { matchToOrders, type AnalyzerMatch, type AnalyzerReading } from "@/lib/astm";
 import { saveHistograms } from "@/lib/queries/analyzer";
 import { cn } from "@/lib/utils";
@@ -150,6 +150,17 @@ export function ResultEntryPage() {
     return () => window.removeEventListener('keydown', h);
   }, [showApprove]);
 
+  // Enter / Down → save current and jump to the next editable result field (fast keyboard entry).
+  function focusNextField(e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>) {
+    if (e.key !== 'Enter' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    const fields = Array.from(document.querySelectorAll<HTMLElement>('[data-rinput]'));
+    const i = fields.indexOf(e.currentTarget);
+    const next = fields[i + 1];
+    if (next) next.focus();
+    else e.currentTarget.blur();
+  }
+
   const handleBlur = (o: OrderWithResult) => {
     if (o.test.result_type === 'calculated') return;
     const value = localValues[o.order.id] ?? '';
@@ -159,13 +170,18 @@ export function ResultEntryPage() {
   };
 
   async function readFromAnalyzer() {
-    if (!settings.analyzer_port) {
+    const conn = settings.analyzer_conn ?? 'network';
+    if (conn === 'network' && settings.analyzer_tcp_mode === 'connect' && !settings.analyzer_host) {
+      alert('No analyzer IP is configured. Set it in Settings → Analyzer.');
+      return;
+    }
+    if (conn === 'serial' && !settings.analyzer_port) {
       alert('No analyzer port is configured. Set it in Settings → Analyzer.');
       return;
     }
     setReading(true);
     try {
-      const r = await readAnalyzer(settings.analyzer_port, Number(settings.analyzer_baud || '9600'), 8000);
+      const r = await readAnalyzerConfigured(settings);
       const matches = matchToOrders(r, orders, localValues);
       if (!matches.length) {
         alert('Data was received but none of the parameters matched this patient\'s ordered tests. Use Settings → Analyzer → Capture raw to check the format.');
@@ -333,9 +349,11 @@ export function ResultEntryPage() {
                         </span>
                       ) : o.test.result_type === 'choice' ? (
                         <select
+                          data-rinput
                           value={localValues[o.order.id] ?? o.test.default_value ?? ''}
                           onChange={e => setLocalValues(prev => ({ ...prev, [o.order.id]: e.target.value }))}
                           onBlur={() => handleBlur(o)}
+                          onKeyDown={focusNextField}
                           disabled={approved}
                           className={cn(
                             "field !w-36 !py-1.5 text-[13.5px]",
@@ -349,10 +367,12 @@ export function ResultEntryPage() {
                         </select>
                       ) : (
                         <input
+                          data-rinput
                           type={o.test.result_type === 'numeric' ? 'number' : 'text'}
                           value={localValues[o.order.id] ?? ''}
                           onChange={e => setLocalValues(prev => ({ ...prev, [o.order.id]: e.target.value }))}
                           onBlur={() => handleBlur(o)}
+                          onKeyDown={focusNextField}
                           disabled={approved}
                           className={cn(
                             "field !w-32 !py-1.5 text-right tabular-nums text-[14px]",
