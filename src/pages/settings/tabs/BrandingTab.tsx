@@ -27,7 +27,7 @@ export function BrandingTab({ settings }: { settings: Record<string, string> }) 
         saving={f.saving}
       />
 
-      <div className="border-t border-[#f1efec]" />
+      <div className="border-t border-[#eef0f4]" />
 
       <ImagePicker
         title="Father's signature"
@@ -49,7 +49,7 @@ export function BrandingTab({ settings }: { settings: Record<string, string> }) 
 /** Subtle checkered backdrop so transparent images read clearly. */
 const CHECKER_STYLE: React.CSSProperties = {
   backgroundImage:
-    "linear-gradient(45deg, #f1efec 25%, transparent 25%), linear-gradient(-45deg, #f1efec 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f1efec 75%), linear-gradient(-45deg, transparent 75%, #f1efec 75%)",
+    "linear-gradient(45deg, #eef0f4 25%, transparent 25%), linear-gradient(-45deg, #eef0f4 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eef0f4 75%), linear-gradient(-45deg, transparent 75%, #eef0f4 75%)",
   backgroundSize: "12px 12px",
   backgroundPosition: "0 0, 0 6px, 6px -6px, -6px 0",
 };
@@ -109,7 +109,7 @@ function ImagePicker({
   return (
     <div>
       <SectionLabel>{title}</SectionLabel>
-      <div className="text-[12px] text-[#a8a29b] -mt-2 mb-3">{description}</div>
+      <div className="text-[12px] text-[#a3a5b3] -mt-2 mb-3">{description}</div>
 
       <input
         ref={inputRef}
@@ -125,7 +125,7 @@ function ImagePicker({
       {value ? (
         <div className="flex items-center gap-4 flex-wrap">
           <div
-            className="w-36 h-24 rounded-xl border border-[#e7e5e1] flex items-center justify-center overflow-hidden shrink-0 p-2"
+            className="w-36 h-24 rounded-xl border border-[#e6e7ee] flex items-center justify-center overflow-hidden shrink-0 p-2"
             style={CHECKER_STYLE}
           >
             <img src={value} alt={`${title} preview`} className="max-w-full max-h-full object-contain" />
@@ -171,17 +171,17 @@ function ImagePicker({
             "border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer " +
             (dragOver
               ? "border-maroon-400 bg-maroon-50/30"
-              : "border-[#ddd9d3] hover:border-maroon-400 hover:bg-maroon-50/30")
+              : "border-[#dcdde6] hover:border-maroon-400 hover:bg-maroon-50/30")
           }
         >
-          <div className="w-11 h-11 rounded-xl bg-[#f1efec] text-[#8a857d] flex items-center justify-center mx-auto mb-3">
+          <div className="w-11 h-11 rounded-xl bg-[#eef0f4] text-[#8a8b97] flex items-center justify-center mx-auto mb-3">
             <ImageIcon size={17} strokeWidth={1.8} />
           </div>
-          <div className="text-[13.5px] text-[#5d5953] font-medium inline-flex items-center gap-1.5">
+          <div className="text-[13.5px] text-[#54555f] font-medium inline-flex items-center gap-1.5">
             <Upload size={14} strokeWidth={1.8} />
             Click to upload, or drag an image here
           </div>
-          <div className="text-[12px] text-[#a8a29b] mt-1">PNG or JPG, transparent background works best</div>
+          <div className="text-[12px] text-[#a3a5b3] mt-1">PNG or JPG, transparent background works best</div>
         </div>
       )}
     </div>

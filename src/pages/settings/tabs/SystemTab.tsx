@@ -97,8 +97,8 @@ export function SystemTab({ settings }: { settings: Record<string, string> }) {
       <Card className="space-y-4">
         <TabHeader title="About" />
         <div className="flex items-center justify-between text-[13.5px]">
-          <span className="text-[#5d5953]">App version</span>
-          <span className="font-mono text-[#1a1a1e] tabular-nums">{version}</span>
+          <span className="text-[#54555f]">App version</span>
+          <span className="font-mono text-[#14151c] tabular-nums">{version}</span>
         </div>
         <div>
           <SecondaryButton onClick={checkUpdates}>

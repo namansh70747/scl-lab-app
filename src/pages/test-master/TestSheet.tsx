@@ -42,7 +42,7 @@ export function TestSheet({
       subtitle={test.panel_code ?? undefined}
       onClose={onClose}
       header={
-        <div className="flex gap-1 border-b border-[#f1efec] px-5 shrink-0">
+        <div className="flex gap-1 border-b border-[#eef0f4] px-5 shrink-0">
           {(["details", "ranges", "interpretation"] as Tab[]).map((t) => (
             <button
               key={t}
@@ -50,8 +50,8 @@ export function TestSheet({
               className={cn(
                 "px-3 py-2.5 text-[13px] font-medium capitalize border-b-2 -mb-px transition-colors",
                 tab === t
-                  ? "border-maroon-600 text-[#1a1a1e]"
-                  : "border-transparent text-[#8a857d] hover:text-[#5d5953]"
+                  ? "border-maroon-600 text-[#14151c]"
+                  : "border-transparent text-[#8a8b97] hover:text-[#54555f]"
               )}
             >
               {t}
@@ -206,7 +206,7 @@ function DetailsTab({
           <TextInput value={formula} onChange={setFormula} disabled={!canEdit} />
         </Field>
       )}
-      <label className="flex items-center gap-2 text-[13px] text-[#5d5953] cursor-pointer select-none">
+      <label className="flex items-center gap-2 text-[13px] text-[#54555f] cursor-pointer select-none">
         <input
           type="checkbox"
           checked={needsReview}
@@ -306,17 +306,17 @@ function RangesTab({
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d] mb-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97] mb-3">
           Existing Ranges
         </p>
         {isLoading ? (
           <div className="space-y-2">
             {[0, 1].map((i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-[#efedea]" />
+              <div key={i} className="h-12 animate-pulse rounded-lg bg-[#eef0f4]" />
             ))}
           </div>
         ) : ranges.length === 0 ? (
-          <p className="text-[13.5px] text-[#8a857d] py-3">No reference ranges yet.</p>
+          <p className="text-[13.5px] text-[#8a8b97] py-3">No reference ranges yet.</p>
         ) : (
           <div className="space-y-2">
             {ranges.map((r) => {
@@ -324,30 +324,30 @@ function RangesTab({
               return (
                 <div
                   key={r.id}
-                  className="group grid grid-cols-[auto_1fr_auto] items-start gap-x-3 rounded-xl border border-[#f1efec] bg-[#fcfbfa] px-3.5 py-2.5"
+                  className="group grid grid-cols-[auto_1fr_auto] items-start gap-x-3 rounded-xl border border-[#eef0f4] bg-[#fcfbfa] px-3.5 py-2.5"
                 >
                   <span className={cn("chip text-[10.5px] mt-0.5", sc.cls)}>{sc.label}</span>
                   <div className="min-w-0">
-                    <div className="text-[13.5px] font-medium text-[#1a1a1e] tabular-nums truncate">
+                    <div className="text-[13.5px] font-medium text-[#14151c] tabular-nums truncate">
                       {r.range_text || (
                         <>
-                          {r.low ?? "—"} <span className="text-[#a8a29b] font-normal">–</span>{" "}
+                          {r.low ?? "—"} <span className="text-[#a3a5b3] font-normal">–</span>{" "}
                           {r.high ?? "—"}
                         </>
                       )}
                     </div>
-                    <div className="text-[11.5px] text-[#8a857d] tabular-nums mt-0.5">
+                    <div className="text-[11.5px] text-[#8a8b97] tabular-nums mt-0.5">
                       {r.age_min_days}–{r.age_max_days} days
                     </div>
                     {r.band_text && (
-                      <div className="text-[11.5px] text-[#8a857d] mt-0.5 truncate">{r.band_text}</div>
+                      <div className="text-[11.5px] text-[#8a8b97] mt-0.5 truncate">{r.band_text}</div>
                     )}
                   </div>
                   {canEdit && (
                     <button
                       onClick={() => setConfirmDel(r)}
                       aria-label="Delete range"
-                      className="w-7 h-7 inline-flex items-center justify-center rounded-lg text-[#a8a29b] opacity-0 group-hover:opacity-100 hover:bg-[#fbe5e5] hover:text-[#a31e1e] transition-all"
+                      className="w-7 h-7 inline-flex items-center justify-center rounded-lg text-[#a3a5b3] opacity-0 group-hover:opacity-100 hover:bg-[#fbe5e5] hover:text-[#a31e1e] transition-all"
                     >
                       <Trash2 size={15} strokeWidth={1.8} />
                     </button>
@@ -360,8 +360,8 @@ function RangesTab({
       </div>
 
       {canEdit && (
-        <div className="rounded-xl border border-[#f1efec] p-4 space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d] mb-3">
+        <div className="rounded-xl border border-[#eef0f4] p-4 space-y-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97] mb-3">
             Add Range
           </p>
           <div className="grid grid-cols-4 gap-3">

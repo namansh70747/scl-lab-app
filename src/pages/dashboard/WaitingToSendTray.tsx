@@ -29,13 +29,13 @@ export function WaitingToSendTray({
 
   return (
     <div className="card overflow-hidden">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#f1efec]">
-        <h2 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d]">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#eef0f4]">
+        <h2 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97]">
           <Send size={15} strokeWidth={1.8} className="text-maroon-600" />
           Waiting to Send
         </h2>
         {!loading && rows.length > 0 && (
-          <span className="text-[12px] text-[#8a857d] tabular-nums">{rows.length}</span>
+          <span className="text-[12px] text-[#8a8b97] tabular-nums">{rows.length}</span>
         )}
       </div>
 
@@ -44,25 +44,25 @@ export function WaitingToSendTray({
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="flex items-center justify-between gap-3 px-5 py-[15px] border-b border-[#f6f5f3] last:border-0"
+              className="flex items-center justify-between gap-3 px-5 py-[15px] border-b border-[#f1f1f5] last:border-0"
             >
               <div className="min-w-0">
-                <div className="h-3.5 w-32 animate-pulse rounded-lg bg-[#efedea]" />
-                <div className="mt-2 h-3 w-24 animate-pulse rounded-lg bg-[#efedea]" />
+                <div className="h-3.5 w-32 animate-pulse rounded-lg bg-[#eef0f4]" />
+                <div className="mt-2 h-3 w-24 animate-pulse rounded-lg bg-[#eef0f4]" />
               </div>
               <div className="flex shrink-0 gap-2">
-                <div className="h-7 w-[88px] animate-pulse rounded-lg bg-[#efedea]" />
-                <div className="h-7 w-16 animate-pulse rounded-lg bg-[#efedea]" />
+                <div className="h-7 w-[88px] animate-pulse rounded-lg bg-[#eef0f4]" />
+                <div className="h-7 w-16 animate-pulse rounded-lg bg-[#eef0f4]" />
               </div>
             </div>
           ))}
         </div>
       ) : rows.length === 0 ? (
         <div className="py-14 text-center">
-          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1efec] text-[#8a857d]">
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#eef0f4] text-[#8a8b97]">
             <CheckCircle2 size={17} strokeWidth={1.8} />
           </div>
-          <p className="text-[13.5px] text-[#8a857d]">
+          <p className="text-[13.5px] text-[#8a8b97]">
             All caught up — no approved reports waiting to be sent.
           </p>
         </div>
@@ -73,14 +73,14 @@ export function WaitingToSendTray({
             return (
               <div
                 key={keyFor(r)}
-                className="px-5 py-3 border-b border-[#f6f5f3] last:border-0 transition-colors hover:bg-[#faf9f7]"
+                className="px-5 py-3 border-b border-[#f1f1f5] last:border-0 transition-colors hover:bg-[#fafafe]"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-[13.5px] font-medium text-[#1a1a1e]">
+                    <p className="truncate text-[13.5px] font-medium text-[#14151c]">
                       {r.patient_name}
                     </p>
-                    <p className="mt-0.5 text-[12px] text-[#8a857d] tabular-nums">
+                    <p className="mt-0.5 text-[12px] text-[#8a8b97] tabular-nums">
                       #{r.test_no}
                       {r.phone ? ` · ${r.phone}` : " · no phone"}
                     </p>

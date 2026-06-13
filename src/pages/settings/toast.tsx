@@ -54,7 +54,7 @@ function ToastItem({ toast, dismiss }: { toast: ToastMsg; dismiss: (id: number) 
     <div
       role="status"
       onClick={() => dismiss(toast.id)}
-      className="flex items-center gap-2.5 bg-[#1d1b18] text-white text-[13px] rounded-xl px-4 py-3 shadow-[var(--shadow-pop)] animate-fade-up max-w-sm cursor-pointer"
+      className="flex items-center gap-2.5 bg-[#14151c] text-white text-[13px] rounded-xl px-4 py-3 shadow-[var(--shadow-pop)] animate-fade-up max-w-sm cursor-pointer"
     >
       {toast.kind === "error" && <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] shrink-0" aria-hidden />}
       <span className="flex-1 whitespace-pre-wrap break-words">{toast.text}</span>

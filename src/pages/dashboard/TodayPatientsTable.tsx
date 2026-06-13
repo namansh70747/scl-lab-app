@@ -29,12 +29,12 @@ export function TodayPatientsTable({
 
   return (
     <div className="card overflow-hidden">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#f1efec]">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d]">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#eef0f4]">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97]">
           Today's Patients
         </h2>
         {!loading && patients.length > 0 && (
-          <span className="text-[12px] text-[#8a857d] tabular-nums">{patients.length} total</span>
+          <span className="text-[12px] text-[#8a8b97] tabular-nums">{patients.length} total</span>
         )}
       </div>
 
@@ -43,21 +43,21 @@ export function TodayPatientsTable({
           {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="flex items-center gap-4 px-5 py-[15px] border-b border-[#f6f5f3] last:border-0"
+              className="flex items-center gap-4 px-5 py-[15px] border-b border-[#f1f1f5] last:border-0"
             >
-              <div className="h-3.5 w-9 animate-pulse rounded-lg bg-[#efedea]" />
-              <div className="h-3.5 w-40 animate-pulse rounded-lg bg-[#efedea]" />
-              <div className="ml-auto h-3.5 w-16 animate-pulse rounded-lg bg-[#efedea]" />
-              <div className="h-5 w-24 animate-pulse rounded-full bg-[#efedea]" />
+              <div className="h-3.5 w-9 animate-pulse rounded-lg bg-[#eef0f4]" />
+              <div className="h-3.5 w-40 animate-pulse rounded-lg bg-[#eef0f4]" />
+              <div className="ml-auto h-3.5 w-16 animate-pulse rounded-lg bg-[#eef0f4]" />
+              <div className="h-5 w-24 animate-pulse rounded-full bg-[#eef0f4]" />
             </div>
           ))}
         </div>
       ) : patients.length === 0 ? (
         <div className="py-14 text-center">
-          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1efec] text-[#8a857d]">
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#eef0f4] text-[#8a8b97]">
             <UserPlus size={17} strokeWidth={1.8} />
           </div>
-          <p className="text-[13.5px] text-[#8a857d]">No patients registered today.</p>
+          <p className="text-[13.5px] text-[#8a8b97]">No patients registered today.</p>
           <button onClick={() => navigate("/new-patient")} className="btn btn-secondary mt-4">
             Register first patient
           </button>
@@ -66,7 +66,7 @@ export function TodayPatientsTable({
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="sticky top-0 z-10 bg-white">
-              <tr className="border-b border-[#f1efec]">
+              <tr className="border-b border-[#eef0f4]">
                 <th className="px-5 py-3 text-left table-head">Test No</th>
                 <th className="px-5 py-3 text-left table-head">Name</th>
                 <th className="px-5 py-3 text-right table-head">Tests / Amount</th>
@@ -82,32 +82,32 @@ export function TodayPatientsTable({
                 return (
                   <tr
                     key={p.id}
-                    className="group cursor-pointer border-b border-[#f6f5f3] last:border-0 transition-colors hover:bg-[#faf9f7]"
+                    className="group cursor-pointer border-b border-[#f1f1f5] last:border-0 transition-colors hover:bg-[#fafafe]"
                     onClick={() => navigate(`/result-entry/${p.id}`)}
                   >
-                    <td className="px-5 py-3 text-[13.5px] font-medium text-[#5d5953] tabular-nums">
+                    <td className="px-5 py-3 text-[13.5px] font-medium text-[#54555f] tabular-nums">
                       {p.test_no}
                     </td>
-                    <td className="px-5 py-3 text-[13.5px] font-medium text-[#1a1a1e]">
+                    <td className="px-5 py-3 text-[13.5px] font-medium text-[#14151c]">
                       {p.title} {p.name}
                       {p.doctor_name && (
-                        <span className="block text-[12px] font-normal text-[#8a857d]">
+                        <span className="block text-[12px] font-normal text-[#8a8b97]">
                           Dr. {p.doctor_name}
                         </span>
                       )}
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <span className="text-[13.5px] tabular-nums text-[#1a1a1e]">
+                      <span className="text-[13.5px] tabular-nums text-[#14151c]">
                         {formatCurrency(p.bill?.total ?? 0)}
                       </span>
-                      <span className="block text-[12px] text-[#8a857d] tabular-nums">
+                      <span className="block text-[12px] text-[#8a8b97] tabular-nums">
                         {p.test_count ?? 0} test{(p.test_count ?? 0) === 1 ? "" : "s"}
                       </span>
                     </td>
                     <td
                       className={cn(
                         "px-5 py-3 text-right text-[13.5px] tabular-nums",
-                        balance > 0 ? "text-[#b91c1c] font-semibold" : "text-[#8a857d]"
+                        balance > 0 ? "text-[#b91c1c] font-semibold" : "text-[#8a8b97]"
                       )}
                     >
                       {balance > 0 ? formatCurrency(balance) : "—"}

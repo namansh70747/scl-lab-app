@@ -74,7 +74,7 @@ function ExportButton({
 }
 
 function FilterLabel({ children }: { children: React.ReactNode }) {
-  return <span className="text-[12.5px] font-medium text-[#8a857d]">{children}</span>;
+  return <span className="text-[12.5px] font-medium text-[#8a8b97]">{children}</span>;
 }
 
 function DateRangeBar({
@@ -120,10 +120,10 @@ function LoadingRows({ colSpan }: { colSpan: number }) {
   return (
     <>
       {[0, 1, 2, 3].map((i) => (
-        <tr key={i} className="border-b border-[#f6f5f3] last:border-0">
+        <tr key={i} className="border-b border-[#f1f1f5] last:border-0">
           <td colSpan={colSpan} className="px-5 py-3">
             <div
-              className="animate-pulse rounded-lg bg-[#efedea] h-4"
+              className="animate-pulse rounded-lg bg-[#eef0f4] h-4"
               style={{ width: `${78 - i * 9}%` }}
             />
           </td>
@@ -137,10 +137,10 @@ function EmptyRow({ colSpan, message }: { colSpan: number; message: string }) {
   return (
     <tr>
       <td colSpan={colSpan} className="py-14 text-center">
-        <div className="w-11 h-11 rounded-xl bg-[#f1efec] text-[#8a857d] flex items-center justify-center mx-auto mb-3">
+        <div className="w-11 h-11 rounded-xl bg-[#eef0f4] text-[#8a8b97] flex items-center justify-center mx-auto mb-3">
           <FileBarChart2 size={17} strokeWidth={1.8} />
         </div>
-        <div className="text-[13.5px] text-[#8a857d]">{message}</div>
+        <div className="text-[13.5px] text-[#8a8b97]">{message}</div>
       </td>
     </tr>
   );
@@ -148,10 +148,10 @@ function EmptyRow({ colSpan, message }: { colSpan: number; message: string }) {
 
 const TH = "px-5 py-3 text-left table-head";
 const THR = "px-5 py-3 text-right table-head";
-const TD = "px-5 py-3 text-[13.5px] text-[#1a1a1e]";
-const TDR = "px-5 py-3 text-[13.5px] text-right tabular-nums text-[#1a1a1e]";
-const ROW = "border-b border-[#f6f5f3] last:border-0 transition-colors hover:bg-[#faf9f7]";
-const TOTAL_ROW = "bg-[#faf9f7] font-semibold border-t border-[#e7e5e1]";
+const TD = "px-5 py-3 text-[13.5px] text-[#14151c]";
+const TDR = "px-5 py-3 text-[13.5px] text-right tabular-nums text-[#14151c]";
+const ROW = "border-b border-[#f1f1f5] last:border-0 transition-colors hover:bg-[#fafafe]";
+const TOTAL_ROW = "bg-[#fafafe] font-semibold border-t border-[#e6e7ee]";
 
 // ---- Day Book ------------------------------------------------------------
 
@@ -187,7 +187,7 @@ function DayBookTab() {
       <TableCard>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#f1efec]">
+            <tr className="border-b border-[#eef0f4]">
               <th className={TH}>Test No</th>
               <th className={TH}>Name</th>
               <th className={TH}>Date</th>
@@ -209,12 +209,12 @@ function DayBookTab() {
                   <tr key={r.test_no} className={ROW}>
                     <td className={cn(TD, "font-mono text-[13px]")}>{r.test_no}</td>
                     <td className={TD}>{r.name}</td>
-                    <td className="px-5 py-3 text-[12.5px] text-[#8a857d]">{formatDate(r.registered_at)}</td>
+                    <td className="px-5 py-3 text-[12.5px] text-[#8a8b97]">{formatDate(r.registered_at)}</td>
                     <td className={TD}>{r.doctor_name || "—"}</td>
-                    <td className="px-5 py-3 text-[12.5px] text-[#8a857d]">{r.mode || "—"}</td>
+                    <td className="px-5 py-3 text-[12.5px] text-[#8a8b97]">{r.mode || "—"}</td>
                     <td className={TDR}>{formatCurrency(r.total)}</td>
                     <td className={cn(TDR, "text-[#14743a]")}>{formatCurrency(r.received)}</td>
-                    <td className={cn(TDR, r.balance > 0 ? "text-[#b91c1c] font-semibold" : "text-[#a8a29b]")}>
+                    <td className={cn(TDR, r.balance > 0 ? "text-[#b91c1c] font-semibold" : "text-[#a3a5b3]")}>
                       {r.balance > 0 ? formatCurrency(r.balance) : "—"}
                     </td>
                   </tr>
@@ -296,7 +296,7 @@ function MonthlyChart({ data }: { data: MonthlyRow[] }) {
                   textAnchor="middle"
                   fontSize={10}
                   fontWeight={600}
-                  fill="#5d5953"
+                  fill="#54555f"
                   className="tabular-nums"
                 >
                   {formatCurrency(d.received)}
@@ -307,7 +307,7 @@ function MonthlyChart({ data }: { data: MonthlyRow[] }) {
                 y={topPad + chartH + 16}
                 textAnchor="middle"
                 fontSize={10.5}
-                fill="#8a857d"
+                fill="#8a8b97"
               >
                 {monthLabel(d.month)}
               </text>
@@ -320,7 +320,7 @@ function MonthlyChart({ data }: { data: MonthlyRow[] }) {
           y1={topPad + chartH + 0.5}
           x2={width - gap / 2}
           y2={topPad + chartH + 0.5}
-          stroke="#e7e5e1"
+          stroke="#e6e7ee"
           strokeWidth={1}
         />
       </svg>
@@ -374,7 +374,7 @@ function MonthlyTab() {
 
       {data.length > 0 && (
         <div className="card p-5 animate-fade-up">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d] mb-3">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97] mb-3">
             Monthly Collection (Received)
           </div>
           <MonthlyChart data={data} />
@@ -384,7 +384,7 @@ function MonthlyTab() {
       <TableCard>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#f1efec]">
+            <tr className="border-b border-[#eef0f4]">
               <th className={TH}>Month</th>
               <th className={THR}>Patients</th>
               <th className={THR}>Total</th>
@@ -405,7 +405,7 @@ function MonthlyTab() {
                     <td className={TDR}>{r.patients}</td>
                     <td className={TDR}>{formatCurrency(r.total)}</td>
                     <td className={cn(TDR, "text-[#14743a]")}>{formatCurrency(r.received)}</td>
-                    <td className={cn(TDR, r.balance > 0 ? "text-[#b91c1c] font-semibold" : "text-[#a8a29b]")}>
+                    <td className={cn(TDR, r.balance > 0 ? "text-[#b91c1c] font-semibold" : "text-[#a3a5b3]")}>
                       {r.balance > 0 ? formatCurrency(r.balance) : "—"}
                     </td>
                   </tr>
@@ -464,7 +464,7 @@ function DoctorWiseTab() {
       <TableCard>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#f1efec]">
+            <tr className="border-b border-[#eef0f4]">
               <th className={TH}>Doctor</th>
               <th className={THR}>Patients</th>
               <th className={THR}>Total</th>
@@ -538,7 +538,7 @@ function TestWiseTab() {
       <TableCard>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#f1efec]">
+            <tr className="border-b border-[#eef0f4]">
               <th className={TH}>Code</th>
               <th className={TH}>Test</th>
               <th className={THR}>Count</th>
@@ -599,7 +599,7 @@ function PendingTab() {
       <TableCard>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#f1efec]">
+            <tr className="border-b border-[#eef0f4]">
               <th className={TH}>Test No</th>
               <th className={TH}>Name</th>
               <th className={TH}>Phone</th>
@@ -618,8 +618,8 @@ function PendingTab() {
                   <tr key={r.test_no} className={ROW}>
                     <td className={cn(TD, "font-mono text-[13px]")}>{r.test_no}</td>
                     <td className={TD}>{r.name}</td>
-                    <td className="px-5 py-3 text-[13.5px] text-[#8a857d]">{r.phone || "—"}</td>
-                    <td className="px-5 py-3 text-[12.5px] text-[#8a857d]">{formatDate(r.registered_at)}</td>
+                    <td className="px-5 py-3 text-[13.5px] text-[#8a8b97]">{r.phone || "—"}</td>
+                    <td className="px-5 py-3 text-[12.5px] text-[#8a8b97]">{formatDate(r.registered_at)}</td>
                     <td className={cn(TDR, "text-[#b91c1c] font-semibold")}>{formatCurrency(r.balance)}</td>
                   </tr>
                 ))}
@@ -657,7 +657,7 @@ export function BizReportsPage() {
               "px-3.5 py-1.5 rounded-[9px] text-[13px] font-medium transition-colors whitespace-nowrap",
               tab === t.id
                 ? "bg-[#4f46e5] text-white shadow-sm"
-                : "text-[#5d5953] hover:bg-[#eef0fe]"
+                : "text-[#54555f] hover:bg-[#eef0fe]"
             )}
           >
             {t.label}

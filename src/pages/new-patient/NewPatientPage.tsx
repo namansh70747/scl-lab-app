@@ -349,7 +349,7 @@ export function NewPatientPage() {
                 <FieldError msg={errors.phone} />
               </div>
               <div className="flex-1">
-                <label className={labelCls}>Email <span className="text-[#a8a29b] font-normal">(optional)</span></label>
+                <label className={labelCls}>Email <span className="text-[#a3a5b3] font-normal">(optional)</span></label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="patient@email.com" className="field" />
               </div>
             </div>
@@ -469,7 +469,7 @@ export function NewPatientPage() {
               {selectedTests.length === 0 ? (
                 <div className="py-8 text-center">
                   <p className="text-[13.5px] text-[#8a8b97]">No tests selected yet</p>
-                  <p className="text-[12px] text-[#a8a29b] mt-1">Search, or tap a panel / frequent chip</p>
+                  <p className="text-[12px] text-[#a3a5b3] mt-1">Search, or tap a panel / frequent chip</p>
                 </div>
               ) : selectedTests.map(st => (
                 <div
@@ -477,11 +477,11 @@ export function NewPatientPage() {
                   className="group flex items-center justify-between gap-3 px-2 py-2 border-b border-[#f1f1f5] last:border-0 transition-colors hover:bg-[#fafafe] rounded-lg"
                 >
                   <span className="min-w-0 truncate">
-                    <span className="font-mono text-[11.5px] text-[#a8a29b] mr-2">{st.test.code}</span>
+                    <span className="font-mono text-[11.5px] text-[#a3a5b3] mr-2">{st.test.code}</span>
                     <span className="text-[13.5px] text-[#14151c]">{st.test.name}</span>
                   </span>
                   <span className="flex items-center gap-1 shrink-0">
-                    <span className="text-[12.5px] text-[#a8a29b]">₹</span>
+                    <span className="text-[12.5px] text-[#a3a5b3]">₹</span>
                     <input
                       type="number"
                       tabIndex={-1}
@@ -496,7 +496,7 @@ export function NewPatientPage() {
                       type="button"
                       tabIndex={-1}
                       onClick={() => removeTest(st.test.id)}
-                      className="ml-1 text-[#a8a29b] opacity-0 group-hover:opacity-100 transition-opacity hover:text-[#b91c1c]"
+                      className="ml-1 text-[#a3a5b3] opacity-0 group-hover:opacity-100 transition-opacity hover:text-[#b91c1c]"
                       title="Remove test"
                     >
                       <X size={14} strokeWidth={1.8} />

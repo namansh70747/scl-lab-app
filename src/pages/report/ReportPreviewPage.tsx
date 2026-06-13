@@ -385,7 +385,7 @@ export function ReportPreviewPage() {
     // with nothing attached.
     if (!pdfPath) throw new Error('Could not generate the report PDF — email not sent.');
     const tech = settings.technician_name ?? 'Rajesh Kumar (Vicky)';
-    const bodyHtml = `<div style="font-family:Inter,Arial,sans-serif;color:#1a1a1e">
+    const bodyHtml = `<div style="font-family:Inter,Arial,sans-serif;color:#14151c">
       <p>Dear ${esc(patient!.title)} ${esc(patient!.name)},</p>
       <p>Please find attached your laboratory report (${esc(panelSummary())}) from
       <b style="color:#7b1b1b">Sharma Clinical Laboratory</b>, Nangal Bhur, Pathankot.</p>
@@ -631,8 +631,8 @@ export function ReportPreviewPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97]">Layout</p>
           <Toggle label="Print lab letterhead" checked={printLetterhead} onChange={(v) => { setPrintLetterhead(v); localStorage.setItem('scl_print_letterhead', v ? '1' : '0'); }} />
           {!printLetterhead && (
-            <div className="rounded-lg bg-[#f1efec] px-3 py-2.5 space-y-2">
-              <p className="text-[10.5px] text-[#6b6259] leading-snug">
+            <div className="rounded-lg bg-[#eef0f4] px-3 py-2.5 space-y-2">
+              <p className="text-[10.5px] text-[#54555f] leading-snug">
                 Letterhead hidden for printing on your pre-printed paper. Adjust the gaps so the data lands inside the printed frame.
               </p>
               <GapInput label="Top gap" value={preTop} onChange={(v) => { setPreTop(v); localStorage.setItem('scl_pre_top', String(v)); }} />
@@ -684,7 +684,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
 
 function GapInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
   return (
-    <label className="flex items-center justify-between text-[11.5px] text-[#6b6259]">
+    <label className="flex items-center justify-between text-[11.5px] text-[#54555f]">
       <span>{label}</span>
       <span className="flex items-center gap-1">
         <input
@@ -692,7 +692,7 @@ function GapInput({ label, value, onChange }: { label: string; value: number; on
           onChange={(e) => onChange(Math.max(0, Math.min(120, Number(e.target.value) || 0)))}
           className="w-14 rounded border border-[#d8d3cc] bg-white px-2 py-1 text-right tabular-nums"
         />
-        <span className="text-[#a8a29b]">mm</span>
+        <span className="text-[#a3a5b3]">mm</span>
       </span>
     </label>
   );

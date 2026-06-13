@@ -16,12 +16,12 @@ export function Field({
   const text = required ? label.trim().replace(/\s*\*$/, "") : label;
   return (
     <div>
-      <label className="block text-[12.5px] font-medium text-[#5d5953] mb-1.5">
+      <label className="block text-[12.5px] font-medium text-[#54555f] mb-1.5">
         {text}
         {required && <span className="text-maroon-600"> *</span>}
       </label>
       {children}
-      {hint && !error && <p className="text-[11.5px] text-[#a8a29b] mt-1">{hint}</p>}
+      {hint && !error && <p className="text-[11.5px] text-[#a3a5b3] mt-1">{hint}</p>}
       {error && <p className="text-[11.5px] text-[#b91c1c] mt-1">{error}</p>}
     </div>
   );

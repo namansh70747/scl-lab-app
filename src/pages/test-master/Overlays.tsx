@@ -17,7 +17,7 @@ function CloseButton({ onClose }: { onClose: () => void }) {
     <button
       onClick={onClose}
       aria-label="Close"
-      className="w-7 h-7 shrink-0 inline-flex items-center justify-center rounded-lg text-[#8a857d] hover:bg-[#f1efec] hover:text-[#1a1a1e] transition-colors"
+      className="w-7 h-7 shrink-0 inline-flex items-center justify-center rounded-lg text-[#8a8b97] hover:bg-[#eef0f4] hover:text-[#14151c] transition-colors"
     >
       <X size={16} strokeWidth={1.8} />
     </button>
@@ -40,7 +40,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#1a1208]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-[#0e0f16]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -54,8 +54,8 @@ export function Modal({
           width
         )}
       >
-        <div className="flex items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#f1efec] shrink-0">
-          <h2 className="text-[15px] font-semibold text-[#1a1a1e]">{title}</h2>
+        <div className="flex items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#eef0f4] shrink-0">
+          <h2 className="text-[15px] font-semibold text-[#14151c]">{title}</h2>
           <CloseButton onClose={onClose} />
         </div>
         <div className="p-6 overflow-y-auto">{children}</div>
@@ -84,7 +84,7 @@ export function Sheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#1a1208]/40 backdrop-blur-[2px] animate-fade-in flex justify-end"
+      className="fixed inset-0 z-50 bg-[#0e0f16]/40 backdrop-blur-[2px] animate-fade-in flex justify-end"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -95,15 +95,15 @@ export function Sheet({
         aria-label={title}
         className="bg-white w-[420px] max-w-full h-full shadow-[var(--shadow-pop)] animate-fade-up flex flex-col"
       >
-        <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3.5 border-b border-[#f1efec] shrink-0">
+        <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3.5 border-b border-[#eef0f4] shrink-0">
           <div className="min-w-0">
             <div className="flex items-center gap-2 min-w-0">
-              <h2 className="text-[15px] font-semibold text-[#1a1a1e] truncate">{title}</h2>
+              <h2 className="text-[15px] font-semibold text-[#14151c] truncate">{title}</h2>
               {chip && (
                 <span className="chip chip-gray font-mono text-[10.5px] shrink-0">{chip}</span>
               )}
             </div>
-            {subtitle && <p className="text-[12px] text-[#8a857d] mt-0.5 truncate">{subtitle}</p>}
+            {subtitle && <p className="text-[12px] text-[#8a8b97] mt-0.5 truncate">{subtitle}</p>}
           </div>
           <CloseButton onClose={onClose} />
         </div>
@@ -132,7 +132,7 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[55] bg-[#1a1208]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
+      className="fixed inset-0 z-[55] bg-[#0e0f16]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
@@ -142,8 +142,8 @@ export function ConfirmDialog({
         aria-modal="true"
         className="bg-white rounded-2xl shadow-[var(--shadow-pop)] w-full max-w-sm p-6 animate-scale-in"
       >
-        <h3 className="text-[15px] font-semibold text-[#1a1a1e]">{title}</h3>
-        <p className="text-[13.5px] text-[#5d5953] mt-2 leading-relaxed">{message}</p>
+        <h3 className="text-[15px] font-semibold text-[#14151c]">{title}</h3>
+        <p className="text-[13.5px] text-[#54555f] mt-2 leading-relaxed">{message}</p>
         <div className="flex justify-end gap-2 mt-6">
           <button onClick={onCancel} className="btn btn-ghost">
             Cancel

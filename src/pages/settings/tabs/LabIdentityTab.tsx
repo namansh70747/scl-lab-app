@@ -92,7 +92,7 @@ function HeaderPreview(props: {
   footer: string;
 }) {
   return (
-    <div className="mt-3 border border-[#e7e5e1] rounded-xl overflow-hidden bg-white shadow-[var(--shadow-card)]">
+    <div className="mt-3 border border-[#e6e7ee] rounded-xl overflow-hidden bg-white shadow-[var(--shadow-card)]">
       <div className="px-5 pt-4 pb-3 text-center">
         <div className="flex items-start justify-between gap-3 text-left">
           <div className="w-12 h-12 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold text-sm shrink-0">SCL</div>
@@ -119,7 +119,7 @@ function HeaderPreview(props: {
         </div>
       )}
       {props.footer && (
-        <div className="px-4 py-1.5 text-center text-[9px] text-gray-600 border-t border-[#e7e5e1]">{props.footer}</div>
+        <div className="px-4 py-1.5 text-center text-[9px] text-gray-600 border-t border-[#e6e7ee]">{props.footer}</div>
       )}
     </div>
   );

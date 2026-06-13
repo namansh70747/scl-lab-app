@@ -27,7 +27,7 @@ function ToastItem({ toast, dismiss }: { toast: ToastMsg; dismiss: (id: number) 
   return (
     <div
       role="status"
-      className="flex items-center gap-2.5 bg-[#1d1b18] text-white text-[13px] rounded-xl px-4 py-3 shadow-[var(--shadow-pop)] animate-fade-up max-w-sm"
+      className="flex items-center gap-2.5 bg-[#14151c] text-white text-[13px] rounded-xl px-4 py-3 shadow-[var(--shadow-pop)] animate-fade-up max-w-sm"
     >
       <span
         className={cn(

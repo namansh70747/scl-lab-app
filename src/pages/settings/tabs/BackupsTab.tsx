@@ -74,8 +74,8 @@ export function BackupsTab({ settings }: { settings: Record<string, string> }) {
             <DatabaseBackup size={15} strokeWidth={1.8} />
             {running ? "Backing up…" : "Backup now"}
           </PrimaryButton>
-          <span className="text-[12px] text-[#a8a29b]">
-            Last backup: <b className="font-semibold text-[#5d5953]">{lastBackupDate}</b>
+          <span className="text-[12px] text-[#a3a5b3]">
+            Last backup: <b className="font-semibold text-[#54555f]">{lastBackupDate}</b>
           </span>
         </div>
 
@@ -132,7 +132,7 @@ function RestoreWizard({ onInfo }: { onToast: (m: string) => void; onInfo: (m: s
           <FolderOpen size={15} strokeWidth={1.8} />
           Choose backup file…
         </SecondaryButton>
-        {chosen && <span className="text-[12px] text-[#5d5953] font-mono">{chosen}</span>}
+        {chosen && <span className="text-[12px] text-[#54555f] font-mono">{chosen}</span>}
       </div>
 
       {chosen && (

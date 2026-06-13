@@ -18,7 +18,7 @@ interface EditingCell {
 
 /** Borderless inline edit input — quiet underline, maroon when focused. */
 const INLINE_INPUT =
-  "bg-transparent border-0 border-b-[1.5px] border-[#d6d3cd] rounded-none px-0 py-0.5 text-[13.5px] text-[#1a1a1e] focus:border-maroon-600 focus:outline-none focus-visible:outline-none transition-colors";
+  "bg-transparent border-0 border-b-[1.5px] border-[#cfd1da] rounded-none px-0 py-0.5 text-[13.5px] text-[#14151c] focus:border-maroon-600 focus:outline-none focus-visible:outline-none transition-colors";
 
 export function TestMasterPage() {
   const qc = useQueryClient();
@@ -211,7 +211,7 @@ export function TestMasterPage() {
     <div className="pt-4 space-y-4 animate-fade-up">
       {/* Header row */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <p className="text-[13px] text-[#8a857d] tabular-nums">
+        <p className="text-[13px] text-[#8a8b97] tabular-nums">
           {allTests.length} tests · {panels.length} panels
         </p>
         <div className="flex items-center gap-2">
@@ -240,7 +240,7 @@ export function TestMasterPage() {
       <div className="flex items-start gap-6">
         {/* Left rail */}
         <aside className="w-44 shrink-0">
-          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d]">
+          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97]">
             Panels
           </p>
           <nav className="space-y-px">
@@ -268,13 +268,13 @@ export function TestMasterPage() {
               "mt-4 mx-1 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors",
               reviewOnly
                 ? "bg-[#fdf0d7] text-[#92600a]"
-                : "text-[#8a857d] hover:bg-[#f1efec] hover:text-[#5d5953]"
+                : "text-[#8a8b97] hover:bg-[#eef0f4] hover:text-[#54555f]"
             )}
           >
             <span
               className={cn(
                 "w-1.5 h-1.5 rounded-full",
-                reviewOnly ? "bg-amber-500" : "bg-[#d6d3cd]"
+                reviewOnly ? "bg-amber-500" : "bg-[#cfd1da]"
               )}
             />
             Needs review
@@ -296,7 +296,7 @@ export function TestMasterPage() {
               <Search
                 size={15}
                 strokeWidth={1.8}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a8a29b] pointer-events-none"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a3a5b3] pointer-events-none"
               />
               <input
                 value={searchQ}
@@ -305,14 +305,14 @@ export function TestMasterPage() {
                 className="field pl-9"
               />
             </div>
-            <span className="text-[12px] text-[#a8a29b] tabular-nums">{filtered.length} shown</span>
+            <span className="text-[12px] text-[#a3a5b3] tabular-nums">{filtered.length} shown</span>
           </div>
 
           {/* Table */}
           <div className="card overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#f1efec]">
+                <tr className="border-b border-[#eef0f4]">
                   <th className="px-5 py-3 text-left table-head">Code</th>
                   <th className="px-5 py-3 text-left table-head">Name</th>
                   <th className="px-5 py-3 text-left table-head">Unit</th>
@@ -325,10 +325,10 @@ export function TestMasterPage() {
               <tbody>
                 {isLoading ? (
                   [...Array(8)].map((_, i) => (
-                    <tr key={i} className="border-b border-[#f6f5f3] last:border-0">
+                    <tr key={i} className="border-b border-[#f1f1f5] last:border-0">
                       {[...Array(7)].map((__, j) => (
                         <td key={j} className="px-5 py-3">
-                          <div className="h-4 animate-pulse rounded-lg bg-[#efedea]" />
+                          <div className="h-4 animate-pulse rounded-lg bg-[#eef0f4]" />
                         </td>
                       ))}
                     </tr>
@@ -347,14 +347,14 @@ export function TestMasterPage() {
                         key={t.id}
                         onClick={() => setSelectedTest(t)}
                         className={cn(
-                          "group border-b border-[#f6f5f3] last:border-0 cursor-pointer transition-colors hover:bg-[#faf9f7]",
+                          "group border-b border-[#f1f1f5] last:border-0 cursor-pointer transition-colors hover:bg-[#fafafe]",
                           liveSelected?.id === t.id && "bg-maroon-50/60 hover:bg-maroon-50/60",
                           !t.enabled && "opacity-50"
                         )}
                       >
                         <td
                           className={cn(
-                            "px-5 py-3 font-mono text-[12px] text-[#8a857d]",
+                            "px-5 py-3 font-mono text-[12px] text-[#8a8b97]",
                             !!t.needs_review && "shadow-[inset_2px_0_0_#f59e0b]"
                           )}
                         >
@@ -370,7 +370,7 @@ export function TestMasterPage() {
                             beginEdit(t, "name");
                           }}
                           display={
-                            <span className="text-[14px] font-medium text-[#1a1a1e]">{t.name}</span>
+                            <span className="text-[14px] font-medium text-[#14151c]">{t.name}</span>
                           }
                         >
                           <input
@@ -393,7 +393,7 @@ export function TestMasterPage() {
                             beginEdit(t, "unit");
                           }}
                           display={
-                            <span className="text-[12.5px] text-[#8a857d]">{t.unit || "—"}</span>
+                            <span className="text-[12.5px] text-[#8a8b97]">{t.unit || "—"}</span>
                           }
                         >
                           <input
@@ -446,7 +446,7 @@ export function TestMasterPage() {
                           ) : (
                             <span
                               className={cn(
-                                "text-[#1a1a1e]",
+                                "text-[#14151c]",
                                 canEditPrices && "group-hover:text-maroon-700 transition-colors"
                               )}
                             >
@@ -460,7 +460,7 @@ export function TestMasterPage() {
                             {t.result_type}
                           </span>
                         </td>
-                        <td className="px-5 py-3 font-mono text-[11.5px] text-[#a8a29b]">
+                        <td className="px-5 py-3 font-mono text-[11.5px] text-[#a3a5b3]">
                           {t.panel_code ?? "—"}
                         </td>
 
@@ -577,13 +577,13 @@ function RailButton({
       className={cn(
         "w-full flex items-center px-3 py-1.5 rounded-lg text-[13px] text-left transition-colors",
         active
-          ? "bg-white shadow-[var(--shadow-card)] font-semibold text-[#1a1a1e]"
-          : "text-[#5d5953] hover:bg-[#f1efec]"
+          ? "bg-white shadow-[var(--shadow-card)] font-semibold text-[#14151c]"
+          : "text-[#54555f] hover:bg-[#eef0f4]"
       )}
     >
       <span className="truncate">{label}</span>
       {count !== undefined && (
-        <span className="text-[10.5px] text-[#a8a29b] tabular-nums ml-auto pl-2">{count}</span>
+        <span className="text-[10.5px] text-[#a3a5b3] tabular-nums ml-auto pl-2">{count}</span>
       )}
     </button>
   );
@@ -609,9 +609,9 @@ function MiniSwitch({
       onClick={onToggle}
       className={cn(
         "relative inline-flex h-[18px] w-[30px] shrink-0 items-center rounded-full transition-colors align-middle",
-        on ? "bg-[#15803d]" : "bg-[#d6d3cd]",
+        on ? "bg-[#15803d]" : "bg-[#cfd1da]",
         disabled ? "cursor-not-allowed" : "cursor-pointer",
-        !disabled && !on && "hover:bg-[#c9c4bc]"
+        !disabled && !on && "hover:bg-[#c4c6d2]"
       )}
     >
       <span
@@ -647,17 +647,17 @@ function CellEdit({
 function EmptyState({ reviewOnly, searchQ }: { reviewOnly: boolean; searchQ: string }) {
   return (
     <div className="py-14 text-center">
-      <div className="w-11 h-11 rounded-xl bg-[#f1efec] text-[#8a857d] flex items-center justify-center mx-auto mb-3">
+      <div className="w-11 h-11 rounded-xl bg-[#eef0f4] text-[#8a8b97] flex items-center justify-center mx-auto mb-3">
         <FlaskConical size={17} strokeWidth={1.8} />
       </div>
-      <p className="text-[13.5px] text-[#8a857d]">
+      <p className="text-[13.5px] text-[#8a8b97]">
         {searchQ
           ? "No tests match your search."
           : reviewOnly
           ? "No tests flagged for review."
           : "No tests in this panel."}
       </p>
-      <p className="text-[12px] text-[#a8a29b] mt-1">
+      <p className="text-[12px] text-[#a3a5b3] mt-1">
         {searchQ ? "Try a different code or name." : "Use “Add Test” to create one."}
       </p>
     </div>

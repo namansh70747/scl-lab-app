@@ -62,7 +62,7 @@ function ToggleSwitch({
       }}
       className={cn(
         "relative inline-flex h-[18px] w-8 shrink-0 items-center rounded-full transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-maroon-500/40 focus-visible:ring-offset-1 disabled:opacity-50",
-        on ? "bg-maroon-700" : "bg-[#dedad4]"
+        on ? "bg-maroon-700" : "bg-[#dcdde6]"
       )}
     >
       <span
@@ -98,7 +98,7 @@ function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#1a1208]/40 p-4 backdrop-blur-[2px] animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0e0f16]/40 p-4 backdrop-blur-[2px] animate-fade-in"
       onClick={onClose}
     >
       <div
@@ -107,7 +107,7 @@ function Modal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-5 flex items-start justify-between">
-          <h2 className="text-[15px] font-semibold text-[#1a1a1e]">{title}</h2>
+          <h2 className="text-[15px] font-semibold text-[#14151c]">{title}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -165,7 +165,7 @@ function DoctorDialog({
     <Modal title={doctor ? "Edit Doctor" : "Add Doctor"} onClose={onClose}>
       <form onSubmit={submit} className="space-y-4">
         <div>
-          <label className="mb-1.5 block text-[12.5px] font-medium text-[#5d5953]">
+          <label className="mb-1.5 block text-[12.5px] font-medium text-[#54555f]">
             Name <span className="text-maroon-600">*</span>
           </label>
           <input
@@ -177,8 +177,8 @@ function DoctorDialog({
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-[12.5px] font-medium text-[#5d5953]">
-            Degree <span className="text-[#8a857d] font-normal">(optional)</span>
+          <label className="mb-1.5 block text-[12.5px] font-medium text-[#54555f]">
+            Degree <span className="text-[#8a8b97] font-normal">(optional)</span>
           </label>
           <input
             value={degree}
@@ -187,7 +187,7 @@ function DoctorDialog({
             className="field w-full"
           />
         </div>
-        <p className="text-[12px] text-[#8a857d]">
+        <p className="text-[12px] text-[#8a8b97]">
           {doctor
             ? "Updates this doctor — including a rename — keeping their referral history."
             : "New doctors are matched by name; an existing name just updates that doctor."}
@@ -244,12 +244,12 @@ function SummaryDialog({
     <Modal title={doctor.name} onClose={onClose}>
       <div className="space-y-4">
         {doctor.degree && (
-          <p className="-mt-4 text-[12.5px] text-[#8a857d]">{doctor.degree}</p>
+          <p className="-mt-4 text-[12.5px] text-[#8a8b97]">{doctor.degree}</p>
         )}
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1.5 block text-[12.5px] font-medium text-[#5d5953]">
+            <label className="mb-1.5 block text-[12.5px] font-medium text-[#54555f]">
               From
             </label>
             <input
@@ -261,7 +261,7 @@ function SummaryDialog({
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-[12.5px] font-medium text-[#5d5953]">
+            <label className="mb-1.5 block text-[12.5px] font-medium text-[#54555f]">
               To
             </label>
             <input
@@ -283,14 +283,14 @@ function SummaryDialog({
             {stats.map((s) => (
               <div
                 key={s.label}
-                className="rounded-xl border border-[#f1efec] bg-[#faf9f7] px-3.5 py-3"
+                className="rounded-xl border border-[#eef0f4] bg-[#fafafe] px-3.5 py-3"
               >
-                <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d]">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97]">
                   {s.label}
                 </div>
-                <div className="mt-1 text-[18px] font-bold tabular-nums text-[#1a1a1e] transition-colors">
+                <div className="mt-1 text-[18px] font-bold tabular-nums text-[#14151c] transition-colors">
                   {isLoading ? (
-                    <span className="inline-block h-5 w-16 animate-pulse rounded-lg bg-[#efedea]" />
+                    <span className="inline-block h-5 w-16 animate-pulse rounded-lg bg-[#eef0f4]" />
                   ) : (
                     s.value
                   )}
@@ -300,7 +300,7 @@ function SummaryDialog({
           </div>
         )}
 
-        <p className="text-[12px] text-[#8a857d]">
+        <p className="text-[12px] text-[#8a8b97]">
           Showing referrals registered between {formatDate(from)} and{" "}
           {formatDate(to)}.
         </p>
@@ -364,13 +364,13 @@ function InlineDegree({
           e.stopPropagation();
           setEditing(true);
         }}
-        className="-mx-1 rounded-md px-1 py-0.5 text-[13px] text-[#8a857d] transition-colors hover:bg-[#f1efec] hover:text-[#5d5953]"
+        className="-mx-1 rounded-md px-1 py-0.5 text-[13px] text-[#8a8b97] transition-colors hover:bg-[#eef0f4] hover:text-[#54555f]"
         title="Click to edit degree"
       >
         {doctor.degree?.trim() ? (
           doctor.degree
         ) : (
-          <span className="text-[#c9c4bc]">—</span>
+          <span className="text-[#c4c6d2]">—</span>
         )}
       </button>
     );
@@ -390,7 +390,7 @@ function InlineDegree({
           if (e.key === "Escape") cancel();
         }}
         placeholder="Degree"
-        className="w-40 border-0 border-b border-maroon-700/60 bg-transparent px-0 py-0.5 text-[13px] text-[#1a1a1e] placeholder:text-[#a8a29b] focus:border-maroon-700 focus:outline-none"
+        className="w-40 border-0 border-b border-maroon-700/60 bg-transparent px-0 py-0.5 text-[13px] text-[#14151c] placeholder:text-[#a3a5b3] focus:border-maroon-700 focus:outline-none"
       />
       <button
         type="button"
@@ -421,10 +421,10 @@ function TableSkeleton() {
   return (
     <tbody>
       {Array.from({ length: 6 }).map((_, i) => (
-        <tr key={i} className="border-b border-[#f6f5f3] last:border-0">
+        <tr key={i} className="border-b border-[#f1f1f5] last:border-0">
           {Array.from({ length: 5 }).map((__, j) => (
             <td key={j} className="px-5 py-4">
-              <div className="h-4 w-full animate-pulse rounded-lg bg-[#efedea]" />
+              <div className="h-4 w-full animate-pulse rounded-lg bg-[#eef0f4]" />
             </td>
           ))}
         </tr>
@@ -481,7 +481,7 @@ export function DoctorsPage() {
     <div className="pt-4 space-y-4 animate-fade-up">
       {/* header */}
       <div className="flex items-center justify-between">
-        <p className="text-[13px] text-[#8a857d]">
+        <p className="text-[13px] text-[#8a8b97]">
           {isLoading
             ? "Loading…"
             : `${filtered.length} doctor${filtered.length === 1 ? "" : "s"}`}
@@ -500,7 +500,7 @@ export function DoctorsPage() {
         <Search
           size={15}
           strokeWidth={1.8}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8a857d]"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8a8b97]"
         />
         <input
           value={search}
@@ -514,7 +514,7 @@ export function DoctorsPage() {
       <div className="card overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#f1efec]">
+            <tr className="border-b border-[#eef0f4]">
               <th className="table-head px-5 py-3 text-left">Name</th>
               <th className="table-head px-5 py-3 text-left">Degree</th>
               <th className="table-head px-5 py-3 text-center">Referrals</th>
@@ -542,10 +542,10 @@ export function DoctorsPage() {
                 <tr>
                   <td colSpan={5} className="px-5 py-14">
                     <div className="text-center">
-                      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1efec] text-[#8a857d]">
+                      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#eef0f4] text-[#8a8b97]">
                         <Stethoscope size={17} strokeWidth={1.8} />
                       </div>
-                      <p className="text-[13.5px] text-[#8a857d]">
+                      <p className="text-[13.5px] text-[#8a8b97]">
                         {doctors.length === 0
                           ? "Add referring doctors to track their referrals and collections."
                           : "No doctors match your search."}
@@ -569,9 +569,9 @@ export function DoctorsPage() {
                   <tr
                     key={d.id}
                     onClick={() => setDialog({ kind: "summary", doctor: d })}
-                    className="group cursor-pointer border-b border-[#f6f5f3] last:border-0 transition-colors hover:bg-[#faf9f7]"
+                    className="group cursor-pointer border-b border-[#f1f1f5] last:border-0 transition-colors hover:bg-[#fafafe]"
                   >
-                    <td className="px-5 py-3 text-[14px] font-semibold text-[#1a1a1e]">
+                    <td className="px-5 py-3 text-[14px] font-semibold text-[#14151c]">
                       {d.name}
                     </td>
                     <td className="px-5 py-3">

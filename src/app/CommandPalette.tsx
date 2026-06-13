@@ -49,7 +49,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#1a1208]/45 backdrop-blur-[2px] animate-fade-in flex items-start justify-center pt-[14vh]"
+      className="fixed inset-0 z-50 bg-[#0e0f16]/45 backdrop-blur-[2px] animate-fade-in flex items-start justify-center pt-[14vh]"
       onClick={onClose}
     >
       <div
@@ -57,14 +57,14 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         style={{ boxShadow: "var(--shadow-pop)" }}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 px-4.5 px-5 border-b border-[#f1efec]">
-          <Search size={17} className="text-[#a8a29b] shrink-0" />
+        <div className="flex items-center gap-3 px-4.5 px-5 border-b border-[#eef0f4]">
+          <Search size={17} className="text-[#a3a5b3] shrink-0" />
           <input
             ref={inputRef}
             value={q}
             onChange={e => setQ(e.target.value)}
             placeholder="Search patients by name, receipt no. or phone — or jump to a screen…"
-            className="flex-1 py-4 text-[14px] outline-none placeholder:text-[#b5afa7] bg-transparent"
+            className="flex-1 py-4 text-[14px] outline-none placeholder:text-[#a3a5b3] bg-transparent"
             onKeyDown={e => {
               if (e.key === "Escape") onClose();
               if (e.key === "Enter") {
@@ -76,7 +76,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
               }
             }}
           />
-          <kbd className="text-[10px] font-semibold text-[#8a857d] bg-[#f1efec] rounded-md px-1.5 py-1">esc</kbd>
+          <kbd className="text-[10px] font-semibold text-[#8a8b97] bg-[#eef0f4] rounded-md px-1.5 py-1">esc</kbd>
         </div>
 
         <div className="max-h-[340px] overflow-y-auto py-2">
@@ -87,17 +87,17 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                   key={p.id}
                   onClick={() => go(p.status === "approved" ? `/report/${p.id}` : `/result-entry/${p.id}`)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-[#faf6f4]",
-                    i === 0 && "bg-[#faf6f4]"
+                    "w-full flex items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-[#fafafe]",
+                    i === 0 && "bg-[#fafafe]"
                   )}
                 >
-                  <span className="font-mono text-[11px] text-[#a8a29b] w-12 shrink-0">#{p.test_no}</span>
-                  <span className="text-[13.5px] font-medium text-[#1a1a1e] truncate">{p.title} {p.name}</span>
-                  <span className="text-[12px] text-[#a8a29b]">{p.age} {p.age_unit}</span>
+                  <span className="font-mono text-[11px] text-[#a3a5b3] w-12 shrink-0">#{p.test_no}</span>
+                  <span className="text-[13.5px] font-medium text-[#14151c] truncate">{p.title} {p.name}</span>
+                  <span className="text-[12px] text-[#a3a5b3]">{p.age} {p.age_unit}</span>
                   <span className={cn("chip ml-auto", STATUS_CHIP[p.status ?? "registered"])}>
                     {(p.status ?? "registered").replace("_", " ")}
                   </span>
-                  {i === 0 && <CornerDownLeft size={13} className="text-[#c9c4bc]" />}
+                  {i === 0 && <CornerDownLeft size={13} className="text-[#c4c6d2]" />}
                 </button>
               ))}
             </Section>
@@ -109,9 +109,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 <button
                   key={p.to}
                   onClick={() => go(p.to)}
-                  className="w-full flex items-center gap-3 px-5 py-2.5 text-left text-[13.5px] text-[#3c3a36] transition-colors hover:bg-[#faf6f4]"
+                  className="w-full flex items-center gap-3 px-5 py-2.5 text-left text-[13.5px] text-[#34353f] transition-colors hover:bg-[#fafafe]"
                 >
-                  <span className="w-7 h-7 rounded-lg bg-[#f1efec] text-[#8a857d] flex items-center justify-center">
+                  <span className="w-7 h-7 rounded-lg bg-[#eef0f4] text-[#8a8b97] flex items-center justify-center">
                     <p.icon size={14.5} />
                   </span>
                   {p.label}
@@ -121,7 +121,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           )}
 
           {q && patients.length === 0 && pages.length === 0 && (
-            <p className="px-5 py-10 text-center text-[13px] text-[#a8a29b]">
+            <p className="px-5 py-10 text-center text-[13px] text-[#a3a5b3]">
               Nothing matches “{q}”
             </p>
           )}
@@ -134,7 +134,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-1">
-      <p className="px-5 pt-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-[#b5afa7]">{title}</p>
+      <p className="px-5 pt-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-[#a3a5b3]">{title}</p>
       {children}
     </div>
   );

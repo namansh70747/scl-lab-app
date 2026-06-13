@@ -136,8 +136,8 @@ export function AnalyzerTab({ settings }: { settings: Record<string, string> }) 
 
       {raw && (
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d] mb-1.5">Raw output</div>
-          <pre className="max-h-56 overflow-auto rounded-lg bg-[#1d1b18] text-[#e8e6e1] text-[11px] leading-relaxed p-3 whitespace-pre-wrap break-all">{raw}</pre>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97] mb-1.5">Raw output</div>
+          <pre className="max-h-56 overflow-auto rounded-lg bg-[#14151c] text-[#e8e6e1] text-[11px] leading-relaxed p-3 whitespace-pre-wrap break-all">{raw}</pre>
         </div>
       )}
     </Card>

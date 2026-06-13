@@ -125,22 +125,22 @@ export function UsersTab() {
         </div>
         {isLoading ? (
           <div className="px-6 pb-6 space-y-3">
-            <div className="animate-pulse rounded-lg bg-[#efedea] h-4 w-3/4" />
-            <div className="animate-pulse rounded-lg bg-[#efedea] h-4 w-2/3" />
-            <div className="animate-pulse rounded-lg bg-[#efedea] h-4 w-1/2" />
+            <div className="animate-pulse rounded-lg bg-[#eef0f4] h-4 w-3/4" />
+            <div className="animate-pulse rounded-lg bg-[#eef0f4] h-4 w-2/3" />
+            <div className="animate-pulse rounded-lg bg-[#eef0f4] h-4 w-1/2" />
           </div>
         ) : users.length === 0 ? (
           <div className="py-14 text-center">
-            <div className="w-11 h-11 rounded-xl bg-[#f1efec] text-[#8a857d] flex items-center justify-center mx-auto mb-3">
+            <div className="w-11 h-11 rounded-xl bg-[#eef0f4] text-[#8a8b97] flex items-center justify-center mx-auto mb-3">
               <UsersIcon size={17} strokeWidth={1.8} />
             </div>
-            <div className="text-[13.5px] text-[#8a857d]">No users yet.</div>
+            <div className="text-[13.5px] text-[#8a8b97]">No users yet.</div>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#f1efec]">
+                <tr className="border-b border-[#eef0f4]">
                   <th className="px-5 py-3 text-left table-head">User</th>
                   <th className="px-5 py-3 text-left table-head">Role</th>
                   <th className="px-5 py-3 text-left table-head">Active</th>
@@ -151,10 +151,10 @@ export function UsersTab() {
                 {users.map((u) => {
                   const isLastAdmin = u.role === "admin" && u.active === 1 && activeAdmins <= 1;
                   return (
-                    <tr key={u.id} className="group border-b border-[#f6f5f3] last:border-0 transition-colors hover:bg-[#faf9f7]">
+                    <tr key={u.id} className="group border-b border-[#f1f1f5] last:border-0 transition-colors hover:bg-[#fafafe]">
                       <td className="px-5 py-3 text-[13.5px]">
-                        <div className="font-medium text-[#1a1a1e]">{u.display_name}</div>
-                        <div className="text-[12px] text-[#a8a29b]">@{u.username}</div>
+                        <div className="font-medium text-[#14151c]">{u.display_name}</div>
+                        <div className="text-[12px] text-[#a3a5b3]">@{u.username}</div>
                       </td>
                       <td className="px-5 py-3">
                         <span
@@ -234,7 +234,7 @@ function ToggleSwitch({
       onClick={onChange}
       className={cn(
         "relative inline-flex h-[20px] w-[34px] shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400 focus-visible:ring-offset-1",
-        checked ? "bg-[#4f46e5]" : "bg-[#ddd9d3]",
+        checked ? "bg-[#4f46e5]" : "bg-[#dcdde6]",
         disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
       )}
     >

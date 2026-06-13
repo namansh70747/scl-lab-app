@@ -101,7 +101,7 @@ export function PatientsPage() {
     <div className="pt-4 space-y-4 animate-fade-up">
       {/* Header row: muted count left, primary action right */}
       <div className="flex items-center justify-between">
-        <p className="text-[13px] text-[#8a857d]">
+        <p className="text-[13px] text-[#8a8b97]">
           {isLoading
             ? "Searching…"
             : `${filtered.length} patient${filtered.length === 1 ? "" : "s"}`}
@@ -121,7 +121,7 @@ export function PatientsPage() {
             <Search
               size={15}
               strokeWidth={1.8}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a857d] pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a8b97] pointer-events-none"
             />
             <input
               type="text"
@@ -209,7 +209,7 @@ const COLS =
 
 function HeaderRow() {
   return (
-    <div className={cn(COLS, "py-3 border-b border-[#f1efec]")}>
+    <div className={cn(COLS, "py-3 border-b border-[#eef0f4]")}>
       <div className="table-head">Date</div>
       <div className="table-head">Test No</div>
       <div className="table-head">Name</div>
@@ -263,44 +263,44 @@ function ResultsTable({
                 data-index={vi.index}
                 className={cn(
                   COLS,
-                  "group absolute top-0 left-0 w-full border-b border-[#f6f5f3] last:border-0 hover:bg-[#faf9f7] text-[13.5px] transition-colors"
+                  "group absolute top-0 left-0 w-full border-b border-[#f1f1f5] last:border-0 hover:bg-[#fafafe] text-[13.5px] transition-colors"
                 )}
                 style={{
                   transform: `translateY(${vi.start}px)`,
                 }}
               >
-                <div className="text-[12px] font-mono tabular-nums text-[#8a857d]">
+                <div className="text-[12px] font-mono tabular-nums text-[#8a8b97]">
                   {formatDate(p.registered_at)}
                 </div>
-                <div className="text-[12px] font-mono tabular-nums text-[#8a857d]">
+                <div className="text-[12px] font-mono tabular-nums text-[#8a8b97]">
                   {p.test_no}
                 </div>
                 <div className="min-w-0">
                   <button
                     onClick={() => onName(p)}
-                    className="block w-full truncate text-left font-medium text-[#1a1a1e] hover:text-maroon-700 hover:underline transition-colors"
+                    className="block w-full truncate text-left font-medium text-[#14151c] hover:text-maroon-700 hover:underline transition-colors"
                     title="View visit history"
                   >
                     {p.title ? `${p.title} ` : ""}
                     {p.name}
                   </button>
                   {p.phone && (
-                    <div className="truncate text-[12px] text-[#8a857d]">
+                    <div className="truncate text-[12px] text-[#8a8b97]">
                       {p.phone}
                     </div>
                   )}
                 </div>
-                <div className="whitespace-nowrap text-[12.5px] text-[#5d5953]">
+                <div className="whitespace-nowrap text-[12.5px] text-[#54555f]">
                   {p.age} {p.age_unit} /{" "}
                   {p.sex === "MALE" ? "M" : p.sex === "FEMALE" ? "F" : "O"}
                 </div>
-                <div className="truncate text-[12.5px] text-[#8a857d]">
+                <div className="truncate text-[12.5px] text-[#8a8b97]">
                   {p.doctor_name ?? "—"}
                 </div>
-                <div className="text-[#5d5953]">
+                <div className="text-[#54555f]">
                   <span className="tabular-nums">{p.test_count ?? 0}</span>{" "}
-                  <span className="text-[#8a857d]">tests</span>
-                  <div className="text-[12px] tabular-nums text-[#8a857d]">
+                  <span className="text-[#8a8b97]">tests</span>
+                  <div className="text-[12px] tabular-nums text-[#8a8b97]">
                     {formatCurrency(p.bill?.total ?? 0)}
                   </div>
                 </div>
@@ -309,7 +309,7 @@ function ResultsTable({
                     "text-right tabular-nums",
                     (p.bill?.balance ?? 0) > 0
                       ? "font-semibold text-[#b91c1c]"
-                      : "text-[#8a857d]"
+                      : "text-[#8a8b97]"
                   )}
                 >
                   {formatCurrency(p.bill?.balance ?? 0)}
@@ -377,7 +377,7 @@ function HistorySheet({
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div
-        className="absolute inset-0 bg-[#1a1208]/40 backdrop-blur-[2px] animate-fade-in"
+        className="absolute inset-0 bg-[#0e0f16]/40 backdrop-blur-[2px] animate-fade-in"
         onClick={onClose}
         aria-hidden
       />
@@ -386,13 +386,13 @@ function HistorySheet({
         aria-label="Visit history"
         className="relative flex h-full w-[420px] max-w-full flex-col bg-white shadow-[var(--shadow-pop)] animate-fade-up"
       >
-        <div className="flex items-start justify-between border-b border-[#f1efec] p-5">
+        <div className="flex items-start justify-between border-b border-[#eef0f4] p-5">
           <div className="min-w-0">
-            <div className="truncate text-[15px] font-semibold text-[#1a1a1e]">
+            <div className="truncate text-[15px] font-semibold text-[#14151c]">
               {patient.title ? `${patient.title} ` : ""}
               {patient.name}
             </div>
-            <div className="text-[12.5px] text-[#8a857d]">
+            <div className="text-[12.5px] text-[#8a8b97]">
               {patient.phone || "No phone"} · Visit history
             </div>
           </div>
@@ -405,22 +405,22 @@ function HistorySheet({
           </button>
         </div>
 
-        <div className="flex-1 space-y-2 overflow-auto bg-[#f8f7f5] p-4">
+        <div className="flex-1 space-y-2 overflow-auto bg-[#f3f4f8] p-4">
           {isLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-16 animate-pulse rounded-lg bg-[#efedea]"
+                  className="h-16 animate-pulse rounded-lg bg-[#eef0f4]"
                 />
               ))}
             </div>
           ) : visits.length === 0 ? (
             <div className="py-14 text-center">
-              <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1efec] text-[#8a857d]">
+              <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#eef0f4] text-[#8a8b97]">
                 <Search size={17} strokeWidth={1.8} />
               </div>
-              <p className="text-[13.5px] text-[#8a857d]">
+              <p className="text-[13.5px] text-[#8a8b97]">
                 No previous visits found.
               </p>
             </div>
@@ -435,12 +435,12 @@ function HistorySheet({
                 className="card card-hover block w-full p-3 text-left"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[13.5px] font-medium text-[#1a1a1e]">
+                  <span className="text-[13.5px] font-medium text-[#14151c]">
                     {formatDate(v.registered_at)}
                   </span>
                   <StatusChip status={v.status} />
                 </div>
-                <div className="mt-1.5 flex items-center justify-between text-[12px] text-[#8a857d]">
+                <div className="mt-1.5 flex items-center justify-between text-[12px] text-[#8a8b97]">
                   <span className="font-mono tabular-nums">
                     Test #{v.test_no}
                   </span>
@@ -465,10 +465,10 @@ function HistorySheet({
 function EmptyState({ query, onNew }: { query: string; onNew: () => void }) {
   return (
     <div className="py-14 text-center">
-      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1efec] text-[#8a857d]">
+      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#eef0f4] text-[#8a8b97]">
         <Search size={17} strokeWidth={1.8} />
       </div>
-      <p className="text-[13.5px] text-[#8a857d]">
+      <p className="text-[13.5px] text-[#8a8b97]">
         {query ? "No patients match your filters." : "No patients yet."}
       </p>
       <button onClick={onNew} className="btn btn-secondary mt-4">
@@ -485,12 +485,12 @@ function TableSkeleton() {
       {Array.from({ length: 8 }).map((_, i) => (
         <div
           key={i}
-          className={cn(COLS, "border-b border-[#f6f5f3] last:border-0 py-4")}
+          className={cn(COLS, "border-b border-[#f1f1f5] last:border-0 py-4")}
         >
           {Array.from({ length: 9 }).map((_, j) => (
             <div
               key={j}
-              className="h-4 animate-pulse rounded-lg bg-[#efedea]"
+              className="h-4 animate-pulse rounded-lg bg-[#eef0f4]"
             />
           ))}
         </div>

@@ -330,25 +330,25 @@ export function ResultEntryPage() {
             {patient && (
               <div className="min-w-0">
                 <div className="flex items-baseline gap-2.5 min-w-0">
-                  <span className="font-mono text-[12.5px] text-[#8a857d] shrink-0">#{patient.test_no}</span>
-                  <span className="font-semibold text-[15px] text-[#1a1a1e] truncate">{patient.title} {patient.name}</span>
-                  <span className="text-[12.5px] text-[#5d5953] shrink-0">
+                  <span className="font-mono text-[12.5px] text-[#8a8b97] shrink-0">#{patient.test_no}</span>
+                  <span className="font-semibold text-[15px] text-[#14151c] truncate">{patient.title} {patient.name}</span>
+                  <span className="text-[12.5px] text-[#54555f] shrink-0">
                     {patient.age} {patient.age_unit} / {patient.sex === 'MALE' ? 'M' : 'F'}
                   </span>
                   {patient.doctor_name && (
-                    <span className="text-[12.5px] text-[#8a857d] truncate">Ref: {patient.doctor_name}</span>
+                    <span className="text-[12.5px] text-[#8a8b97] truncate">Ref: {patient.doctor_name}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2.5 mt-1.5">
-                  <div className="w-36 h-[2px] rounded-full bg-[#e7e5e1] overflow-hidden">
+                  <div className="w-36 h-[2px] rounded-full bg-[#e6e7ee] overflow-hidden">
                     <div
                       className="h-full bg-maroon-600 rounded-full transition-all duration-300 ease-out"
                       style={{ width: `${total > 0 ? (progress / total) * 100 : 0}%` }}
                     />
                   </div>
-                  <span className="text-[11px] text-[#8a857d] tabular-nums">{progress}/{total} entered</span>
+                  <span className="text-[11px] text-[#8a8b97] tabular-nums">{progress}/{total} entered</span>
                   {saveMut.isPending
-                    ? <span className="text-[11px] text-[#8a857d]">Saving…</span>
+                    ? <span className="text-[11px] text-[#8a8b97]">Saving…</span>
                     : savedTick > 0 && <span className="flex items-center gap-1 text-[11px] text-[#16a34a]"><Check size={11} strokeWidth={2.4} /> All saved</span>}
                 </div>
               </div>
@@ -401,12 +401,12 @@ export function ResultEntryPage() {
       {/* Panel sections */}
       {sortedPanels.map(({ panel, orders: panelOrders }) => (
         <div key={panel.code} className="card overflow-hidden animate-fade-up">
-          <div className="px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d] bg-[#faf9f7] border-b border-[#f1efec]">
+          <div className="px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97] bg-[#fafafe] border-b border-[#eef0f4]">
             {panel.report_heading}
           </div>
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#f1efec]">
+              <tr className="border-b border-[#eef0f4]">
                 <th className="px-5 py-3 text-left table-head">Test Name</th>
                 <th className="px-5 py-3 text-left table-head w-44">Result</th>
                 <th className="px-5 py-3 text-left table-head w-24">Unit</th>
@@ -427,22 +427,22 @@ export function ResultEntryPage() {
                   <tr
                     key={o.order.id}
                     className={cn(
-                      "group border-b border-[#f6f5f3] last:border-0 transition-colors",
-                      o.order.not_done ? "opacity-40" : "hover:bg-[#faf9f7]",
+                      "group border-b border-[#f1f1f5] last:border-0 transition-colors",
+                      o.order.not_done ? "opacity-40" : "hover:bg-[#fafafe]",
                       flag && !o.order.not_done && "bg-[#fdf6f6]"
                     )}
                   >
-                    <td className="px-5 py-2.5 text-[15px] text-[#1a1a1e]">{o.test.name}</td>
+                    <td className="px-5 py-2.5 text-[15px] text-[#14151c]">{o.test.name}</td>
                     <td className="px-5 py-2.5">
                       {o.order.not_done ? (
-                        <span className="text-[12px] text-[#a8a29b] italic">Not done</span>
+                        <span className="text-[12px] text-[#a3a5b3] italic">Not done</span>
                       ) : isCalc ? (
                         <span className="inline-flex w-32 items-center justify-end gap-1.5">
                           <span className={cn(
                             "text-[14px] tabular-nums text-right",
                             flag === 'H' && "text-[#b91c1c] font-semibold",
                             flag === 'L' && "text-[#1d4ed8] font-semibold",
-                            !flag && "text-[#1a1a1e]"
+                            !flag && "text-[#14151c]"
                           )}>
                             {displayVal || '—'}
                           </span>
@@ -483,8 +483,8 @@ export function ResultEntryPage() {
                         />
                       )}
                     </td>
-                    <td className="px-5 py-2.5 text-[12.5px] text-[#8a857d]">{o.test.unit}</td>
-                    <td className="px-5 py-2.5 text-[12.5px] text-[#8a857d] tabular-nums">
+                    <td className="px-5 py-2.5 text-[12.5px] text-[#8a8b97]">{o.test.unit}</td>
+                    <td className="px-5 py-2.5 text-[12.5px] text-[#8a8b97] tabular-nums">
                       {displayRange(range) || (range?.band_text ? <span className="italic">{range.band_text.split(' / ')[0]}</span> : '')}
                     </td>
                     <td className="px-5 py-2.5">
@@ -512,7 +512,7 @@ export function ResultEntryPage() {
                       ) : (
                         <button
                           onClick={() => markNotDone(o.order.id).then(() => qc.invalidateQueries({ queryKey: ['orders', pid] }))}
-                          className="text-[#a8a29b] opacity-0 group-hover:opacity-100 transition-opacity hover:text-[#b91c1c]"
+                          className="text-[#a3a5b3] opacity-0 group-hover:opacity-100 transition-opacity hover:text-[#b91c1c]"
                           title="Mark not done"
                         >
                           <X size={14} strokeWidth={1.8} />
@@ -529,7 +529,7 @@ export function ResultEntryPage() {
 
       {/* Comments */}
       <div className="card p-5">
-        <label className="block text-[12.5px] font-medium text-[#5d5953] mb-1.5">Comments (printed on report)</label>
+        <label className="block text-[12.5px] font-medium text-[#54555f] mb-1.5">Comments (printed on report)</label>
         <textarea
           value={comment}
           onChange={e => setComment(e.target.value)}
@@ -543,7 +543,7 @@ export function ResultEntryPage() {
       {/* Add-test dialog — append more tests to this patient; the report grows accordingly */}
       {showAddTest && (
         <div
-          className="fixed inset-0 z-50 bg-[#1a1208]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-[#0e0f16]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
           onClick={() => { setShowAddTest(false); setAddQuery(''); setAddResults([]); }}
         >
           <div
@@ -551,8 +551,8 @@ export function ResultEntryPage() {
             onClick={e => e.stopPropagation()}
             role="dialog" aria-modal="true"
           >
-            <h3 className="text-[16px] font-semibold text-[#1a1a1e] mb-1">Add a test</h3>
-            <p className="text-[13px] text-[#5d5953] mb-3">Search and tap a test to add it to this patient. The bill and report update automatically.</p>
+            <h3 className="text-[16px] font-semibold text-[#14151c] mb-1">Add a test</h3>
+            <p className="text-[13px] text-[#54555f] mb-3">Search and tap a test to add it to this patient. The bill and report update automatically.</p>
             <input
               autoFocus
               value={addQuery}
@@ -562,15 +562,15 @@ export function ResultEntryPage() {
             />
             <div className="max-h-72 overflow-auto">
               {addResults.length === 0 ? (
-                <p className="text-[13px] text-[#a8a29b] py-4 text-center">{addQuery ? 'No matching tests.' : 'Type to search…'}</p>
+                <p className="text-[13px] text-[#a3a5b3] py-4 text-center">{addQuery ? 'No matching tests.' : 'Type to search…'}</p>
               ) : addResults.map(t => (
                 <button
                   key={t.id}
                   onClick={() => addTest(t)}
-                  className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-[#faf9f7] text-left"
+                  className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-[#fafafe] text-left"
                 >
-                  <span className="text-[14px] text-[#1a1a1e]">{t.name} <span className="text-[12px] text-[#a8a29b]">({t.code})</span></span>
-                  <span className="text-[13px] tabular-nums text-[#5d5953]">₹{t.price}</span>
+                  <span className="text-[14px] text-[#14151c]">{t.name} <span className="text-[12px] text-[#a3a5b3]">({t.code})</span></span>
+                  <span className="text-[13px] tabular-nums text-[#54555f]">₹{t.price}</span>
                 </button>
               ))}
             </div>
@@ -584,7 +584,7 @@ export function ResultEntryPage() {
       {/* Analyzer review dialog — staff confirm before values touch the patient */}
       {analyzer && (
         <div
-          className="fixed inset-0 z-50 bg-[#1a1208]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-[#0e0f16]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
           onClick={() => setAnalyzer(null)}
         >
           <div
@@ -593,14 +593,14 @@ export function ResultEntryPage() {
             role="dialog"
             aria-modal="true"
           >
-            <h3 className="text-[16px] font-semibold text-[#1a1a1e] mb-1">Values from analyzer</h3>
-            <p className="text-[13px] text-[#5d5953] mb-3">
+            <h3 className="text-[16px] font-semibold text-[#14151c] mb-1">Values from analyzer</h3>
+            <p className="text-[13px] text-[#54555f] mb-3">
               Review the {analyzer.matches.length} matched parameter{analyzer.matches.length !== 1 ? 's' : ''}. Applying overwrites the current values.
             </p>
-            <div className="max-h-72 overflow-auto rounded-xl border border-[#f1efec]">
+            <div className="max-h-72 overflow-auto rounded-xl border border-[#eef0f4]">
               <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="border-b border-[#f1efec] bg-[#faf9f7]">
+                  <tr className="border-b border-[#eef0f4] bg-[#fafafe]">
                     <th className="px-3 py-2 text-left table-head">Test</th>
                     <th className="px-3 py-2 text-right table-head w-24">Current</th>
                     <th className="px-3 py-2 text-right table-head w-24">Analyzer</th>
@@ -608,10 +608,10 @@ export function ResultEntryPage() {
                 </thead>
                 <tbody>
                   {analyzer.matches.map(m => (
-                    <tr key={m.orderId} className="border-b border-[#f6f5f3] last:border-0">
-                      <td className="px-3 py-1.5 text-[#1a1a1e]">{m.testName}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums text-[#a8a29b]">{m.current || '—'}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums font-semibold text-[#1a1a1e]">{m.incoming}</td>
+                    <tr key={m.orderId} className="border-b border-[#f1f1f5] last:border-0">
+                      <td className="px-3 py-1.5 text-[#14151c]">{m.testName}</td>
+                      <td className="px-3 py-1.5 text-right tabular-nums text-[#a3a5b3]">{m.current || '—'}</td>
+                      <td className="px-3 py-1.5 text-right tabular-nums font-semibold text-[#14151c]">{m.incoming}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -631,7 +631,7 @@ export function ResultEntryPage() {
       {/* Approve confirm dialog */}
       {showApprove && (
         <div
-          className="fixed inset-0 z-50 bg-[#1a1208]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-[#0e0f16]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
           onClick={() => setShowApprove(false)}
         >
           <div
@@ -640,17 +640,17 @@ export function ResultEntryPage() {
             role="dialog"
             aria-modal="true"
           >
-            <h3 className="text-[16px] font-semibold text-[#1a1a1e] mb-2">Approve report?</h3>
-            <p className="text-[13.5px] text-[#5d5953] leading-relaxed mb-3">
+            <h3 className="text-[16px] font-semibold text-[#14151c] mb-2">Approve report?</h3>
+            <p className="text-[13.5px] text-[#54555f] leading-relaxed mb-3">
               <span className="tabular-nums">{total}</span> test{total !== 1 ? 's' : ''} entered. Once approved, results are{' '}
-              <strong className="text-[#1a1a1e]">locked</strong> (only an Admin can unlock) and the report is ready to print &amp; deliver.
+              <strong className="text-[#14151c]">locked</strong> (only an Admin can unlock) and the report is ready to print &amp; deliver.
             </p>
             {notDoneOrders.length > 0 && (
-              <div className="rounded-xl bg-[#faf9f7] border border-[#f1efec] px-3.5 py-2.5 mb-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a857d] mb-1.5">Excluded — not done</p>
+              <div className="rounded-xl bg-[#fafafe] border border-[#eef0f4] px-3.5 py-2.5 mb-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8b97] mb-1.5">Excluded — not done</p>
                 <ul className="space-y-0.5">
                   {notDoneOrders.map(o => (
-                    <li key={o.order.id} className="text-[12.5px] text-[#5d5953]">{o.test.name}</li>
+                    <li key={o.order.id} className="text-[12.5px] text-[#54555f]">{o.test.name}</li>
                   ))}
                 </ul>
               </div>

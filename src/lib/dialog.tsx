@@ -89,7 +89,7 @@ export function DialogHost() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-[#1a1208]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] bg-[#0e0f16]/40 backdrop-blur-[2px] animate-fade-in flex items-center justify-center p-4"
       onClick={onCancel}
     >
       <div
@@ -98,8 +98,8 @@ export function DialogHost() {
         role="dialog"
         aria-modal="true"
       >
-        <h3 className="text-[16px] font-semibold text-[#1a1a1e]">{cfg.title}</h3>
-        {cfg.message && <p className="text-[13px] text-[#5d5953] mt-1.5 leading-relaxed">{cfg.message}</p>}
+        <h3 className="text-[16px] font-semibold text-[#14151c]">{cfg.title}</h3>
+        {cfg.message && <p className="text-[13px] text-[#54555f] mt-1.5 leading-relaxed">{cfg.message}</p>}
         {cfg.kind === "prompt" && (
           <input
             ref={inputRef}

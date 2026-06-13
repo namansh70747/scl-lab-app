@@ -53,11 +53,11 @@ export function SettingsPage() {
     return (
       <div className="pt-4">
         <div className="card p-6 max-w-[640px] py-14 text-center animate-fade-up">
-          <div className="w-11 h-11 rounded-xl bg-[#f1efec] text-[#8a857d] flex items-center justify-center mx-auto mb-3">
+          <div className="w-11 h-11 rounded-xl bg-[#eef0f4] text-[#8a8b97] flex items-center justify-center mx-auto mb-3">
             <Lock size={17} strokeWidth={1.8} />
           </div>
-          <div className="text-[13.5px] font-semibold text-[#1a1a1e]">Admin only</div>
-          <p className="text-[13.5px] text-[#8a857d] mt-1">
+          <div className="text-[13.5px] font-semibold text-[#14151c]">Admin only</div>
+          <p className="text-[13.5px] text-[#8a8b97] mt-1">
             You need administrator access to view or change settings.
           </p>
         </div>
@@ -82,14 +82,14 @@ export function SettingsPage() {
                   className={cn(
                     "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] text-left transition-colors w-auto md:w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400",
                     active
-                      ? "bg-white shadow-[var(--shadow-card)] text-[#1a1a1e] font-semibold"
-                      : "text-[#5d5953] hover:bg-[#f1efec]"
+                      ? "bg-white shadow-[var(--shadow-card)] text-[#14151c] font-semibold"
+                      : "text-[#54555f] hover:bg-[#eef0f4]"
                   )}
                 >
                   <Icon
                     size={16}
                     strokeWidth={active ? 2.2 : 1.8}
-                    className={active ? "text-maroon-600" : "text-[#a8a29b]"}
+                    className={active ? "text-maroon-600" : "text-[#a3a5b3]"}
                   />
                   {t.label}
                 </button>
@@ -101,11 +101,11 @@ export function SettingsPage() {
           <div className="flex-1 min-w-0 w-full">
             {isLoading ? (
               <div className="card p-6 max-w-[640px] space-y-3">
-                <div className="animate-pulse rounded-lg bg-[#efedea] h-5 w-40" />
-                <div className="animate-pulse rounded-lg bg-[#efedea] h-4 w-72" />
-                <div className="animate-pulse rounded-lg bg-[#efedea] h-9 w-full" />
-                <div className="animate-pulse rounded-lg bg-[#efedea] h-9 w-full" />
-                <div className="animate-pulse rounded-lg bg-[#efedea] h-9 w-2/3" />
+                <div className="animate-pulse rounded-lg bg-[#eef0f4] h-5 w-40" />
+                <div className="animate-pulse rounded-lg bg-[#eef0f4] h-4 w-72" />
+                <div className="animate-pulse rounded-lg bg-[#eef0f4] h-9 w-full" />
+                <div className="animate-pulse rounded-lg bg-[#eef0f4] h-9 w-full" />
+                <div className="animate-pulse rounded-lg bg-[#eef0f4] h-9 w-2/3" />
               </div>
             ) : (
               <>
