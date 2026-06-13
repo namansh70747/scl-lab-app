@@ -5,7 +5,7 @@ import { getOrdersWithResults, getReportComment } from "@/lib/queries/results";
 import { listPanels } from "@/lib/queries/tests";
 import { getAllSettings } from "@/lib/queries/settings";
 import { logDelivery, hasDelivered } from "@/lib/queries/delivery";
-import { computeCalculated } from "@/lib/calc";
+import { computeCalculated, resolveCalculated } from "@/lib/calc";
 import { computeFlag, patientAgeDays, findRange, displayRange } from "@/lib/flags";
 import { generateReportQR } from "@/lib/qr";
 import { revealInFolder } from "@/lib/printing";
@@ -121,13 +121,19 @@ export function ReportPreviewPage() {
   }, [searchParams, isApproved, patient, orders.length]);
 
   // Build the numeric values map (by test code) for calculated rows.
-  const valuesMap: Record<string, number | null> = {};
+  const enteredMap: Record<string, number | null> = {};
   for (const o of orders) {
     if (o.result?.value) {
       const n = parseFloat(o.result.value.replace(/,/g, ''));
-      if (!isNaN(n)) valuesMap[o.test.code] = n;
+      if (!isNaN(n)) enteredMap[o.test.code] = n;
     }
   }
+  // Fold calculated values back in so ratios that depend on other derived values
+  // (A/G ratio via GLO, LDL/HDL ratio via LDL) resolve instead of printing blank.
+  const calcTests = orders
+    .filter(o => o.test.result_type === 'calculated' && o.test.formula)
+    .map(o => ({ code: o.test.code, formula: o.test.formula }));
+  const valuesMap = resolveCalculated(enteredMap, calcTests);
 
   // Group active orders by panel, preserving panel sort order.
   const panelMap = new Map<string, { panel: Panel; orders: OrderWithResult[] }>();
@@ -229,6 +235,13 @@ export function ReportPreviewPage() {
     try {
       // wait two frames so the full-letterhead layout actually paints before rasterising
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r(null))));
+      // and wait for every image (logo, signature, QR) to finish decoding, so they are
+      // never missing from a manually-saved / WhatsApp / Email PDF (a refetch-timing race).
+      await Promise.all(
+        Array.from(el.querySelectorAll('img')).map(img =>
+          img.decode().catch(() => undefined)
+        )
+      );
       return await saveReportPdf({
         element: el,
         testNo: patient!.test_no,
