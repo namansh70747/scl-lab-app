@@ -18,6 +18,14 @@ export async function upsertDoctor(name: string, degree?: string): Promise<numbe
   return rows[0]?.id ?? 0;
 }
 
+/** Rename / edit an existing doctor by id (the upsert keys on name, so it can't rename). */
+export async function updateDoctor(id: number, name: string, degree?: string): Promise<void> {
+  await dbExecute(
+    'UPDATE doctors SET name=?, degree=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
+    [name, degree ?? null, id]
+  );
+}
+
 export async function setDoctorActive(id: number, active: number): Promise<void> {
   await dbExecute('UPDATE doctors SET active=?,updated_at=CURRENT_TIMESTAMP WHERE id=?', [active, id]);
 }

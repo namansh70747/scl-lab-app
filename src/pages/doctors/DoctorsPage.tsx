@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   listDoctorsWithCounts,
   upsertDoctor,
+  updateDoctor,
   setDoctorActive,
   referralSummary,
   type DoctorWithCount,
@@ -143,8 +144,14 @@ function DoctorDialog({
   }, []);
 
   const save = useMutation({
-    mutationFn: () => upsertDoctor(name.trim(), degree.trim() || undefined),
+    // Edit mode updates THIS doctor by id (so a rename renames, not duplicates);
+    // add mode upserts by name.
+    mutationFn: async () => {
+      if (doctor) await updateDoctor(doctor.id, name.trim(), degree.trim() || undefined);
+      else await upsertDoctor(name.trim(), degree.trim() || undefined);
+    },
     onSuccess: () => onSaved(),
+    onError: (e: unknown) => alert(e instanceof Error ? e.message : String(e)),
   });
 
   const submit = (e: React.FormEvent) => {
@@ -180,8 +187,9 @@ function DoctorDialog({
           />
         </div>
         <p className="text-[12px] text-[#8a857d]">
-          Doctors are matched by name. Saving an existing name updates that
-          doctor's degree rather than creating a duplicate.
+          {doctor
+            ? "Updates this doctor — including a rename — keeping their referral history."
+            : "New doctors are matched by name; an existing name just updates that doctor."}
         </p>
         {save.isError && (
           <p className="text-[12.5px] font-medium text-[#b91c1c]">
