@@ -60,20 +60,27 @@ function parseHistograms(lines: string[]): AnalyzerHistograms {
 }
 
 export function parseAnalyzer(raw: string): AnalyzerReading {
-  const lines = raw.split(/[\r\n]+/).map((l) => l.trim()).filter(Boolean);
+  // Strip ASTM frame control bytes (STX/ETX/checksum control chars) but keep CR/LF/TAB
+  // for line splitting — otherwise a raw capture still wrapped in STX…ETX makes every
+  // "R|…" record start with "\x02R", failing the record-type test and dropping all values.
+  const cleaned = raw.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F]/g, "");
+  const lines = cleaned.split(/[\r\n]+/).map((l) => l.trim()).filter(Boolean);
   const values: Record<string, AnalyzerValue> = {};
 
   let sawAstmResult = false;
   for (const line of lines) {
-    // ASTM result record:  R|seq|^^^WBC|6.5|10^3/uL|...
+    // ASTM result record:  R|seq|^^^WBC|6.5|10^3/uL|...   (a frame number may prefix the R)
     const fields = line.split("|");
-    if (/^R$/i.test(fields[0]) && fields.length >= 4) {
+    const rec = (fields[0] ?? "").replace(/^\d+/, "");   // drop any leading ASTM frame number
+    if (/^R$/i.test(rec) && fields.length >= 4) {
       sawAstmResult = true;
       const id = (fields[2] ?? "").split("^").filter(Boolean).pop() ?? "";
       const value = (fields[3] ?? "").trim();
       const unit = (fields[4] ?? "").trim();
-      if (id && value !== "" && !isNaN(Number(value))) {
-        values[normKey(id)] = { value, unit };
+      // Some firmwares glue a flag letter to the value ("5.2H", "10.1L") — keep the number.
+      const numMatch = /^-?\d+(?:\.\d+)?/.exec(value);
+      if (id && numMatch) {
+        values[normKey(id)] = { value: numMatch[0], unit };
       }
     }
   }
