@@ -70,7 +70,6 @@ export function TodayPatientsTable({
                 <th className="px-5 py-3 text-left table-head">Test No</th>
                 <th className="px-5 py-3 text-left table-head">Name</th>
                 <th className="px-5 py-3 text-right table-head">Tests / Amount</th>
-                <th className="px-5 py-3 text-right table-head">Balance</th>
                 <th className="px-5 py-3 text-left table-head">Status</th>
                 <th className="px-5 py-3 text-right table-head">Actions</th>
               </tr>
@@ -78,7 +77,6 @@ export function TodayPatientsTable({
             <tbody>
               {patients.map((p) => {
                 const status = (p.status ?? "registered") as PatientStatus;
-                const balance = p.bill?.balance ?? 0;
                 return (
                   <tr
                     key={p.id}
@@ -103,14 +101,6 @@ export function TodayPatientsTable({
                       <span className="block text-[12px] text-[#8a8b97] tabular-nums">
                         {p.test_count ?? 0} test{(p.test_count ?? 0) === 1 ? "" : "s"}
                       </span>
-                    </td>
-                    <td
-                      className={cn(
-                        "px-5 py-3 text-right text-[13.5px] tabular-nums",
-                        balance > 0 ? "text-[#b91c1c] font-semibold" : "text-[#8a8b97]"
-                      )}
-                    >
-                      {balance > 0 ? formatCurrency(balance) : "—"}
                     </td>
                     <td className="px-5 py-3">
                       <span className={cn("chip whitespace-nowrap", STATUS_CHIP[status])}>

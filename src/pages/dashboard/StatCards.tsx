@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { UserPlus, Clock, IndianRupee, AlertCircle } from "lucide-react";
+import { UserPlus, Clock, IndianRupee, CheckCircle2 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 
 interface DashboardStats {
@@ -62,12 +62,12 @@ export function StatCards({ stats, loading }: { stats?: DashboardStats; loading:
       spark: [4, 6, 5, 7, 8, 7, 9],
     },
     {
-      icon: <AlertCircle size={17} strokeWidth={2} />,
-      label: "Balance Due",
-      value: formatCurrency(stats?.balanceDue ?? 0),
+      icon: <CheckCircle2 size={17} strokeWidth={2} />,
+      label: "Reports Approved",
+      value: stats?.approvedCount ?? 0,
       grad: "linear-gradient(135deg,#a78bfa,#7c3aed)",
       glow: "rgba(124,58,237,0.3)",
-      spark: [2, 3, 2, 4, 3, 5, 4],
+      spark: [3, 4, 5, 6, 7, 8, 9],
     },
   ];
 
