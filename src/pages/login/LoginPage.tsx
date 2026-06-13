@@ -133,8 +133,16 @@ export function LoginPage() {
           </ul>
         </div>
 
-        <p className="relative text-xs text-white/35">
-          {settings.lab_name ? `${settings.lab_name}${settings.address_line ? ` · ${settings.address_line}` : ''}` : 'NamAsta Diagnostics'} · v{version}
+        <p className="relative text-xs text-white/35 flex items-center gap-3">
+          <span>{settings.lab_name ? `${settings.lab_name}${settings.address_line ? ` · ${settings.address_line}` : ''}` : 'NamAsta Diagnostics'} · v{version}</span>
+          {import.meta.env.DEV && (
+            <button
+              onClick={() => { localStorage.setItem('namasta_dev_onboard', '1'); window.location.reload(); }}
+              className="text-[#818cf8] hover:text-[#c7cbff] underline underline-offset-2"
+            >
+              Preview onboarding (dev)
+            </button>
+          )}
         </p>
       </aside>
 

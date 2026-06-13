@@ -88,19 +88,26 @@ function LicenseSplash() {
  *  (pay & activate, then name the lab + create login). An activated, set-up lab → sign in. */
 type GatePhase =
   | { kind: "loading" }
-  | { kind: "onboard"; licensed: boolean; status: LicenseStatus }
+  | { kind: "onboard"; licensed: boolean; needSetup: boolean; status: LicenseStatus; preview?: boolean }
   | { kind: "app" };
 
 function LicenseGate() {
   const [phase, setPhase] = useState<GatePhase>({ kind: "loading" });
   const check = async () => {
     try {
-      const status = await getLicenseStatus();   // dev → active:true (no payment), but still first-run setup
-      if (!status.active) { setPhase({ kind: "onboard", licensed: false, status }); return; }
+      // Dev preview: a developer can open the onboarding screens on demand without it blocking
+      // every launch (set from a button on the login page).
+      const devPreview = import.meta.env.DEV && localStorage.getItem("namasta_dev_onboard") === "1";
+      const status = await getLicenseStatus();          // dev → active:true (no payment)
+      if (status.dev && !devPreview) { setPhase({ kind: "app" }); return; }   // developer just enters
       const setup = await needsSetup();
-      setPhase(setup ? { kind: "onboard", licensed: true, status } : { kind: "app" });
+      if (devPreview) { setPhase({ kind: "onboard", licensed: status.active, needSetup: setup, status, preview: true }); return; }
+      // Active subscriber who's already set up → straight to sign-in (no re-filling, ever).
+      if (status.active && !setup) { setPhase({ kind: "app" }); return; }
+      if (status.active && setup) { setPhase({ kind: "onboard", licensed: true, needSetup: true, status }); return; }
+      setPhase({ kind: "onboard", licensed: false, needSetup: setup, status });   // no/expired licence → renew
     } catch {
-      setPhase({ kind: "onboard", licensed: false, status: { active: false } });
+      setPhase({ kind: "onboard", licensed: false, needSetup: true, status: { active: false } });
     }
   };
   useEffect(() => { check(); }, []);
@@ -109,7 +116,7 @@ function LicenseGate() {
   if (phase.kind === "onboard") {
     return (
       <Suspense fallback={<LicenseSplash />}>
-        <OnboardingPage licensed={phase.licensed} status={phase.status} onDone={check} />
+        <OnboardingPage licensed={phase.licensed} needSetup={phase.needSetup} status={phase.status} preview={phase.preview} onDone={check} />
       </Suspense>
     );
   }

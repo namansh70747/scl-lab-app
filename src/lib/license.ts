@@ -25,7 +25,8 @@ export interface LicenseStatus {
   dev?: boolean;
   lab?: string;
   plan?: string;
-  exp?: number;
+  exp?: number;       // unix seconds
+  daysLeft?: number;  // whole days remaining on an active licence
   expired?: boolean;
 }
 
@@ -103,7 +104,8 @@ export async function getLicenseStatus(): Promise<LicenseStatus> {
     if (info.exp * 1000 < Date.now()) {
       return { active: false, expired: true, lab: info.lab, plan: info.plan, exp: info.exp };
     }
-    return { active: true, lab: info.lab, plan: info.plan, exp: info.exp };
+    const daysLeft = Math.ceil((info.exp * 1000 - Date.now()) / 86_400_000);
+    return { active: true, lab: info.lab, plan: info.plan, exp: info.exp, daysLeft };
   } catch {
     // If the DB can't be read yet, fail closed (show activation) rather than crash.
     return { active: false };

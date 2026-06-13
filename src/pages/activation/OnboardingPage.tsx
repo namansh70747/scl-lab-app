@@ -23,8 +23,14 @@ const PLANS: Plan[] = [
 
 const fieldLabel = "block text-[12px] font-medium text-white/60 mb-1.5";
 
-export function OnboardingPage({ licensed, status, onDone }: { licensed: boolean; status: LicenseStatus; onDone: () => void }) {
-  const [step, setStep] = useState<"activate" | "setup">(licensed ? "setup" : "activate");
+export function OnboardingPage({ licensed, needSetup, status, onDone, preview }: {
+  licensed: boolean; needSetup: boolean; status: LicenseStatus; onDone: () => void; preview?: boolean;
+}) {
+  const [step, setStep] = useState<"activate" | "setup">(licensed && !preview ? "setup" : "activate");
+  // After a successful activation: a brand-new lab still needs to set up; a RENEWING lab that's
+  // already set up goes straight in (never re-enters its details).
+  const afterActivate = () => { if (needSetup) setStep("setup"); else onDone(); };
+  const exitPreview = () => { localStorage.removeItem("namasta_dev_onboard"); onDone(); };
 
   return (
     <div className="relative min-h-screen w-full overflow-y-auto text-white"
@@ -41,16 +47,17 @@ export function OnboardingPage({ licensed, status, onDone }: { licensed: boolean
           <Stepper step={step} showActivate={!licensed} />
         </div>
 
-        {import.meta.env.DEV && (
+        {preview && (
           <div className="mt-4 flex items-center gap-2 text-[11px]">
             <span className="text-white/35 uppercase tracking-wider">Dev preview:</span>
             <button onClick={() => setStep("activate")} className={cn("px-2.5 py-1 rounded-full border", step === "activate" ? "border-[#818cf8] text-[#c7cbff]" : "border-white/15 text-white/50")}>Pay & activate</button>
             <button onClick={() => setStep("setup")} className={cn("px-2.5 py-1 rounded-full border", step === "setup" ? "border-[#818cf8] text-[#c7cbff]" : "border-white/15 text-white/50")}>Set up lab</button>
+            <button onClick={exitPreview} className="ml-auto px-2.5 py-1 rounded-full border border-white/15 text-white/50 hover:text-white/80">Exit preview →</button>
           </div>
         )}
 
         {step === "activate"
-          ? <ActivateStep status={status} onActivated={() => setStep("setup")} />
+          ? <ActivateStep status={status} onActivated={afterActivate} />
           : <SetupStep onDone={onDone} />}
       </div>
     </div>

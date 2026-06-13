@@ -11,6 +11,7 @@ import { KeyboardShortcuts } from "@/app/KeyboardShortcuts";
 import { maybeDailyBackup } from "@/lib/backup";
 import { NamAstaMark } from "@/components/common/NamAstaLogo";
 import { getUserById } from "@/lib/queries/auth";
+import { getLicenseStatus, type LicenseStatus } from "@/lib/license";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", key: "D" },
@@ -34,6 +35,8 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
+  const [license, setLicense] = useState<LicenseStatus | null>(null);
+  useEffect(() => { getLicenseStatus().then(setLicense).catch(() => {}); }, []);
 
   useEffect(() => {
     const on = () => setOnline(true), off = () => setOnline(false);
@@ -184,6 +187,15 @@ export function AppShell() {
           </button>
 
           <div className="flex items-center gap-3 text-[12.5px] text-[#8a8b97]">
+            {license?.daysLeft != null && license.daysLeft <= 14 && (
+              <span
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium border bg-amber-50 border-amber-200 text-amber-700"
+                title="Renew your NamAsta subscription to avoid interruption."
+              >
+                <span className="w-[7px] h-[7px] rounded-full bg-amber-400 animate-pulse" />
+                {license.daysLeft <= 0 ? "Subscription expired" : `Renew in ${license.daysLeft}d`}
+              </span>
+            )}
             <span
               className={cn(
                 "flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium border",
