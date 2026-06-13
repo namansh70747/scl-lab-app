@@ -226,9 +226,12 @@ export async function getPatientHistory(name: string, phone: string): Promise<Pa
      LEFT JOIN bills b ON b.patient_id=p.id
      LEFT JOIN orders o ON o.patient_id=p.id
      LEFT JOIN results r ON r.order_id=o.id
-     WHERE p.name=? AND (p.phone=? OR ?='')
+     WHERE p.name=? AND (
+        (?<>'' AND p.phone=?)                              -- has a phone: same name + same phone
+        OR (?='' AND (p.phone IS NULL OR p.phone=''))      -- no phone: only other no-phone same-name visits
+     )
      GROUP BY p.id ORDER BY p.registered_at DESC`,
-    [name, phone, phone]
+    [name, phone, phone, phone]
   );
   return rows.map(r => ({
     ...r,
