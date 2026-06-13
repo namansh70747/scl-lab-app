@@ -6,7 +6,7 @@ import { getOrdersWithResults, saveResult, approvePatient, markNotDone, unlockRe
 import { listPanels, searchTests } from "@/lib/queries/tests";
 import { useSession } from "@/lib/session";
 import { OrderWithResult, Panel, Test } from "@/types";
-import { computeCalculated } from "@/lib/calc";
+import { computeCalculated, resolveCalculated } from "@/lib/calc";
 import { computeFlag, patientAgeDays, findRange, displayRange } from "@/lib/flags";
 import { getAllSettings } from "@/lib/queries/settings";
 import { readAnalyzerConfigured } from "@/lib/serial";
@@ -15,6 +15,18 @@ import { saveHistograms } from "@/lib/queries/analyzer";
 import { promptDialog } from "@/lib/dialog";
 import { cn } from "@/lib/utils";
 import { Check, CheckCircle, ChevronLeft, FileText, Unlock, X, Cable, Plus } from "lucide-react";
+
+/** Parse a test's `choices` JSON without ever throwing — malformed/legacy data
+ *  ('' instead of '[]', bad JSON) must not crash the whole result-entry page. */
+function safeChoices(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.filter((c): c is string => typeof c === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 
 export function ResultEntryPage() {
   const { patientId } = useParams<{ patientId: string }>();
@@ -40,12 +52,18 @@ export function ResultEntryPage() {
 
   // Init local values from saved results
   useEffect(() => {
-    const init: Record<number, string> = {};
-    for (const o of orders) {
-      if (o.result?.value) init[o.order.id] = o.result.value;
-      else if (o.test.default_value) init[o.order.id] = o.test.default_value;
-    }
-    setLocalValues(init);
+    // Seed from saved results/defaults, but PRESERVE any field the user has already
+    // touched this session. A background refetch (triggered by save/add-test/etc.)
+    // must not clobber values the user is mid-typing into other fields.
+    setLocalValues(prev => {
+      const next: Record<number, string> = {};
+      for (const o of orders) {
+        if (o.order.id in prev) next[o.order.id] = prev[o.order.id];   // keep in-progress edit
+        else if (o.result?.value) next[o.order.id] = o.result.value;
+        else if (o.test.default_value) next[o.order.id] = o.test.default_value;
+      }
+      return next;
+    });
   }, [orders]);
 
   useEffect(() => { if (savedComment != null) setComment(savedComment); }, [savedComment]);
@@ -66,12 +84,18 @@ export function ResultEntryPage() {
   const sortedPanels = Object.values(panelMap).sort((a, b) => a.panel.sort_order - b.panel.sort_order);
 
   // Compute values map for calculated fields
-  const valuesMap: Record<string, number | null> = {};
+  const enteredMap: Record<string, number | null> = {};
   for (const o of orders) {
     const v = localValues[o.order.id] ?? '';
     const n = parseFloat(v.replace(/,/g, ''));   // strip thousands separators like calc.ts/flags.ts
-    if (!isNaN(n)) valuesMap[o.test.code] = n;
+    if (!isNaN(n)) enteredMap[o.test.code] = n;
   }
+  // Resolve calc-on-calc chains (A/G ratio via GLO, LDL/HDL ratio via LDL) so the
+  // live preview matches what the report will print.
+  const calcTests = orders
+    .filter(o => o.test.result_type === 'calculated' && o.test.formula)
+    .map(o => ({ code: o.test.code, formula: o.test.formula }));
+  const valuesMap = resolveCalculated(enteredMap, calcTests);
 
   const getDisplayValue = (o: OrderWithResult): string => {
     if (o.test.result_type === 'calculated' && o.test.formula) {
@@ -175,7 +199,13 @@ export function ResultEntryPage() {
   const handleBlur = (o: OrderWithResult) => {
     if (o.test.result_type === 'calculated') return;
     const value = localValues[o.order.id] ?? '';
-    if (!value) return;
+    if (!value) {
+      // Clearing a previously-saved value must persist the clear (otherwise the old
+      // value silently reappears on the next refetch). Don't create empty rows for
+      // fields that were never saved.
+      if (o.result?.value) saveMut.mutate({ orderId: o.order.id, value: '', flag: '' });
+      return;
+    }
     const flag = getFlag(o);
     saveMut.mutate({ orderId: o.order.id, value, flag });
   };
@@ -234,17 +264,22 @@ export function ResultEntryPage() {
     const next = { ...localValues };
     for (const m of analyzer.matches) next[m.orderId] = m.incoming;
     setLocalValues(next);
-    // Persist each imported value, with its freshly-computed flag.
-    for (const m of analyzer.matches) {
-      const o = orders.find(x => x.order.id === m.orderId);
-      if (!o) continue;
-      const ageDays = patient ? patientAgeDays(patient.age, patient.age_unit) : 0;
-      const flag = patient ? computeFlag(o.test.result_type, m.incoming, o.ranges, patient.sex, ageDays) : '';
-      await saveResult(m.orderId, m.incoming, flag, user!.id);
+    try {
+      // Persist each imported value, with its freshly-computed flag.
+      for (const m of analyzer.matches) {
+        const o = orders.find(x => x.order.id === m.orderId);
+        if (!o) continue;
+        const ageDays = patient ? patientAgeDays(patient.age, patient.age_unit) : 0;
+        const flag = patient ? computeFlag(o.test.result_type, m.incoming, o.ranges, patient.sex, ageDays) : '';
+        await saveResult(m.orderId, m.incoming, flag, user!.id);
+      }
+      await saveHistograms(pid, analyzer.reading.histograms);
+      setAnalyzer(null);
+    } catch (e) {
+      alert(`Some imported values could not be saved: ${String(e)}. Please review the highlighted fields.`);
+    } finally {
+      qc.invalidateQueries({ queryKey: ['orders', pid] });
     }
-    await saveHistograms(pid, analyzer.reading.histograms);
-    qc.invalidateQueries({ queryKey: ['orders', pid] });
-    setAnalyzer(null);
   }
 
   const activeOrders = visibleOrders.filter(o => !o.order.not_done);
@@ -398,7 +433,7 @@ export function ResultEntryPage() {
                           )}
                         >
                           <option value="">—</option>
-                          {(JSON.parse(o.test.choices ?? '[]') as string[]).map(c => (
+                          {safeChoices(o.test.choices).map(c => (
                             <option key={c} value={c}>{c}</option>
                           ))}
                         </select>
