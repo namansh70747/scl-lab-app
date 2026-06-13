@@ -49,7 +49,7 @@ export function ResultEntryPage() {
 
   useEffect(() => { if (savedComment != null) setComment(savedComment); }, [savedComment]);
 
-  const isApproved = orders.length > 0 && orders.every(o => o.order.not_done || o.result?.approved_at);
+  const isApproved = orders.length > 0 && orders.every(o => o.order.not_done || o.test.is_panel || o.test.result_type === 'calculated' || o.result?.approved_at);
 
   // Group orders by panel (bundle rows are billing artifacts — never shown here)
   const visibleOrders = orders.filter(o => !o.test.is_panel);

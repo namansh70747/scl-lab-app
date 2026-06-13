@@ -76,7 +76,10 @@ export function ReportPreviewPage() {
   });
 
   const activeOrders = orders.filter(o => !o.order.not_done);
-  const isApproved = activeOrders.length > 0 && activeOrders.every(o => o.result?.approved_at);
+  // Calculated rows (e.g. A/G Ratio) are derived and may be blank when their inputs don't
+  // allow a value — they must NOT gate approval. Only entered (non-calculated) tests do.
+  const gatingOrders = activeOrders.filter(o => o.test.result_type !== 'calculated');
+  const isApproved = gatingOrders.length > 0 && gatingOrders.every(o => o.result?.approved_at);
 
   // Auto-email the report once, right after it is approved, if the patient has an email
   // address and SMTP is configured. Deduped via the delivery log so it never re-sends.
