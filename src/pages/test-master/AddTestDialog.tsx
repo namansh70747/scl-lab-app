@@ -30,6 +30,7 @@ export function AddTestDialog({
   const [price, setPrice] = useState("0");
   const [defaultValue, setDefaultValue] = useState("");
   const [choices, setChoices] = useState("");
+  const [formula, setFormula] = useState("");
   const [errors, setErrors] = useState<{ code?: string; name?: string }>({});
 
   const save = useMutation({
@@ -73,6 +74,7 @@ export function AddTestDialog({
       price: Number(price) || 0,
       default_value: defaultValue.trim() || null,
       choices: choicesJson,
+      formula: resultType === "calculated" ? (formula.trim() || null) : null,
       enabled: 1,
       needs_review: 0,
     });
@@ -122,6 +124,13 @@ export function AddTestDialog({
           <div className="col-span-2">
             <Field label="Choices" hint="Comma-separated, e.g. Positive, Negative, Trace">
               <TextArea value={choices} onChange={setChoices} rows={2} placeholder="Positive, Negative" />
+            </Field>
+          </div>
+        )}
+        {resultType === "calculated" && (
+          <div className="col-span-2">
+            <Field label="Formula" hint="Uses other test codes, e.g. TPN - ALB. Leave blank for built-in formulas (A:G, LDL…).">
+              <TextInput value={formula} onChange={setFormula} placeholder="e.g. TPN - ALB" />
             </Field>
           </div>
         )}

@@ -116,14 +116,23 @@ export function computeGFR(creatinine: number, ageYears: number, sex: 'MALE' | '
   return Math.round(gfr);
 }
 
+/** Clamp to the range toFixed/Math.pow can safely handle — a stray negative or huge
+ *  `decimals` (bad data) would otherwise throw a RangeError and crash report rendering. */
+export function safeDecimals(decimals: number): number {
+  if (!Number.isFinite(decimals)) return 0;
+  return Math.min(10, Math.max(0, Math.trunc(decimals)));
+}
+
 export function roundToDecimals(value: number, decimals: number): number {
-  const factor = Math.pow(10, decimals);
+  const d = safeDecimals(decimals);
+  const factor = Math.pow(10, d);
   return Math.round(value * factor) / factor;
 }
 
 export function formatResult(value: number | null, decimals: number): string {
   if (value == null) return '';
-  return roundToDecimals(value, decimals).toFixed(decimals);
+  const d = safeDecimals(decimals);
+  return roundToDecimals(value, d).toFixed(d);
 }
 
 export { safeNum };

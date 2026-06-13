@@ -75,7 +75,10 @@ export function TestMasterPage() {
   );
 
   const reviewCount = useMemo(() => tests.filter((t) => t.needs_review).length, [tests]);
-  const existingCodes = useMemo(() => new Set(tests.map((t) => t.code.toUpperCase())), [tests]);
+  // Check new codes against the FULL catalogue, not the panel-filtered view — otherwise a
+  // code that exists in another panel passes the check and the ON CONFLICT upsert silently
+  // overwrites that existing test.
+  const existingCodes = useMemo(() => new Set(allTests.map((t) => t.code.toUpperCase())), [allTests]);
 
   const bulkChangedCount = useMemo(() => {
     let n = 0;

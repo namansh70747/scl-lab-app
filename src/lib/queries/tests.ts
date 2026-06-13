@@ -44,6 +44,10 @@ export async function getTestsByPanel(): Promise<Record<string, Test[]>> {
 
 export async function upsertTest(test: Partial<Test> & { code: string; name: string }): Promise<void> {
   assertCan('edit_tests');
+  // Clamp to safe bounds so bad input can never crash report rendering (toFixed) or
+  // produce negative prices that corrupt billing.
+  const decimals = Math.min(10, Math.max(0, Math.trunc(Number(test.decimals ?? 1)) || 0));
+  const price = Math.max(0, Number(test.price ?? 0) || 0);
   await dbExecute(
     `INSERT INTO tests(code,name,panel_id,result_type,unit,decimals,price,enabled,sort_order,choices,default_value,formula,interpretation_note,is_panel,needs_review)
      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -55,7 +59,7 @@ export async function upsertTest(test: Partial<Test> & { code: string; name: str
        is_panel=excluded.is_panel, needs_review=excluded.needs_review,
        updated_at=CURRENT_TIMESTAMP`,
     [test.code, test.name, test.panel_id ?? null, test.result_type ?? 'numeric',
-     test.unit ?? '', test.decimals ?? 1, test.price ?? 0, test.enabled ?? 1,
+     test.unit ?? '', decimals, price, test.enabled ?? 1,
      test.sort_order ?? 0, test.choices ?? null, test.default_value ?? null,
      test.formula ?? null, test.interpretation_note ?? null, test.is_panel ?? 0,
      test.needs_review ?? 0]
@@ -83,6 +87,13 @@ export async function setInterpretation(testId: number, note: string): Promise<v
 
 export async function upsertRange(range: Omit<TestRange, 'id' | 'created_at'>): Promise<void> {
   assertCan('edit_ranges');
+  // A low above high silently breaks H/L flagging (every value reads normal) — reject it.
+  if (range.low != null && range.high != null && range.low > range.high) {
+    throw new Error('Low value cannot be greater than High value.');
+  }
+  if (range.age_min_days > range.age_max_days) {
+    throw new Error('Minimum age cannot be greater than maximum age.');
+  }
   await dbExecute(
     `INSERT INTO test_ranges(test_id,sex,age_min_days,age_max_days,low,high,range_text,band_text)
      VALUES(?,?,?,?,?,?,?,?)`,
