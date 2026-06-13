@@ -2,8 +2,10 @@ import { dbQuery, dbExecute } from '@/lib/db';
 import { Doctor } from '@/types';
 
 export async function listDoctors(activeOnly = true): Promise<Doctor[]> {
+  // Most-referred doctors first so the common ones are top of the dropdown (counter speed).
   return dbQuery<Doctor>(
-    `SELECT * FROM doctors${activeOnly ? ' WHERE active=1' : ''} ORDER BY name`
+    `SELECT d.* FROM doctors d${activeOnly ? ' WHERE d.active=1' : ''}
+     ORDER BY (SELECT COUNT(*) FROM patients p WHERE p.doctor_id=d.id) DESC, d.name`
   );
 }
 

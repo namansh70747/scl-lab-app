@@ -20,11 +20,27 @@ export async function listTests(panelCode?: string, enabledOnly = true): Promise
 }
 
 export async function searchTests(query: string): Promise<Test[]> {
+  // Frequently-ordered tests float to the top, and an exact code-prefix match wins —
+  // so typing "CB" instantly surfaces the most-used CBC at #1 (counter speed).
   const sql = `SELECT t.*, p.code as panel_code, p.report_heading as panel_heading
                FROM tests t LEFT JOIN panels p ON t.panel_id=p.id
                WHERE t.enabled=1 AND (t.code LIKE ? OR t.name LIKE ?)
-               ORDER BY t.code LIMIT 30`;
-  return dbQuery<Test>(sql, [`${query}%`, `%${query}%`]);
+               ORDER BY (CASE WHEN t.code LIKE ? THEN 0 ELSE 1 END),
+                        (SELECT COUNT(*) FROM orders o WHERE o.test_id=t.id) DESC,
+                        t.code
+               LIMIT 30`;
+  return dbQuery<Test>(sql, [`${query}%`, `%${query}%`, `${query}%`]);
+}
+
+/** Most-ordered tests/panels — one-tap chips so the common cases need zero typing. */
+export async function getFrequentTests(limit = 10): Promise<Test[]> {
+  const sql = `SELECT t.*, p.code as panel_code, p.report_heading as panel_heading,
+                      (SELECT COUNT(*) FROM orders o WHERE o.test_id=t.id) as freq
+               FROM tests t LEFT JOIN panels p ON t.panel_id=p.id
+               WHERE t.enabled=1
+               ORDER BY freq DESC, t.name
+               LIMIT ?`;
+  return dbQuery<Test>(sql, [limit]);
 }
 
 export async function getTestRanges(testId: number): Promise<TestRange[]> {
