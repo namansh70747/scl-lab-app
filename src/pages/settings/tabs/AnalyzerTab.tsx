@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, RefreshCw, Cable } from "lucide-react";
 import { Card, TabHeader, TextField, SelectField, PrimaryButton, SecondaryButton, NoteBox } from "../ui";
 import { useSettingsForm } from "../useSettingsForm";
-import { listSerialPorts, readSerialRaw, readTcpRaw } from "@/lib/serial";
+import { listSerialPorts, readSerialRaw, readTcpRaw, localIps } from "@/lib/serial";
 import { parseAnalyzer } from "@/lib/astm";
 import { errMessage } from "../toast";
 
@@ -14,9 +14,12 @@ export function AnalyzerTab({ settings }: { settings: Record<string, string> }) 
   const [ports, setPorts] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [raw, setRaw] = useState<string>("");
+  const [pcIps, setPcIps] = useState<string[]>([]);
 
   const conn = f.get("analyzer_conn") || "network";
   const tcpMode = f.get("analyzer_tcp_mode") || "listen";
+
+  useEffect(() => { localIps().then(setPcIps).catch(() => {}); }, []);
 
   async function refreshPorts() {
     try { setPorts(await listSerialPorts()); }
@@ -29,8 +32,8 @@ export function AnalyzerTab({ settings }: { settings: Record<string, string> }) 
     setRaw("");
     try {
       const text = conn === "network"
-        ? await readTcpRaw(tcpMode, f.get("analyzer_host"), Number(f.get("analyzer_tcp_port") || "5000"), 20000)
-        : await readSerialRaw(f.get("analyzer_port"), Number(f.get("analyzer_baud") || "9600"), 8000);
+        ? await readTcpRaw(tcpMode, f.get("analyzer_host"), Number(f.get("analyzer_tcp_port") || "5000"), 60000)
+        : await readSerialRaw(f.get("analyzer_port"), Number(f.get("analyzer_baud") || "9600"), 20000);
       setRaw(text);
       const n = Object.keys(parseAnalyzer(text).values).length;
       f.toast.success(n ? `Read ${n} parameters from the analyzer.` : "Data received, but no parameters were recognised — see raw output below.");
@@ -71,12 +74,19 @@ export function AnalyzerTab({ settings }: { settings: Record<string, string> }) 
       {conn === "network" ? (
         <>
           <NoteBox>
-            The H360 sends results over the network. The simplest setup: on the analyzer's
-            <b> Host Communication</b> screen, set the <b>Host IP</b> to <b>this PC's IP address</b> and
-            <b> Host Port</b> to the port below, then choose <b>“PC waits for analyzer”</b> here. Both
-            devices must be on the same network (the same router/switch). Run a sample, then click
-            <b> Capture raw</b> to confirm.
+            The H360 sends results over the network. On the analyzer's <b>Host Communication</b>{" "}
+            screen set the <b>Host IP</b> to <b>this PC's IP</b> and <b>Host Port</b> to the port
+            below, then keep <b>“PC waits for analyzer”</b> here. Both must be on the same network.
+            Run a sample, then click <b>Capture raw</b> to confirm.
           </NoteBox>
+          {pcIps.length > 0 && (
+            <div className="flex items-center gap-2 rounded-xl border border-[#c7c9ff] bg-[#eef0fe] px-3.5 py-2.5">
+              <span className="text-[12.5px] text-[#4338ca]">
+                This PC's IP — enter on the H360 as Host IP:
+              </span>
+              <span className="font-mono font-semibold text-[13px] text-[#312e81] tabular-nums">{pcIps.join(", ")}</span>
+            </div>
+          )}
 
           <SelectField
             label="Who connects?"

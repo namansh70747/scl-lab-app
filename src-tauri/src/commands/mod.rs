@@ -428,6 +428,25 @@ pub fn serial_read(port: String, baud: u32, window_ms: u64) -> Result<String, St
     Ok(String::from_utf8_lossy(&acc).into_owned())
 }
 
+/// This PC's primary LAN IPv4 address — shown in Settings → Analyzer so the user knows what
+/// to enter as the "Host IP" on the H360. Uses the OS routing table via a UDP socket
+/// (no packet is actually sent) and works offline.
+#[tauri::command]
+pub fn local_ips() -> Vec<String> {
+    use std::net::UdpSocket;
+    let mut ips = Vec::new();
+    if let Ok(sock) = UdpSocket::bind("0.0.0.0:0") {
+        // Connecting a UDP socket just selects the outbound interface; nothing is transmitted.
+        if sock.connect("192.168.1.1:80").is_ok() || sock.connect("8.8.8.8:80").is_ok() {
+            if let Ok(addr) = sock.local_addr() {
+                let ip = addr.ip().to_string();
+                if ip != "0.0.0.0" { ips.push(ip); }
+            }
+        }
+    }
+    ips
+}
+
 /// Read CBC results from the analyzer over the network (TCP/IP).
 ///
 /// `mode = "listen"`: this PC acts as the host server — it binds `port` and waits for the
@@ -439,11 +458,11 @@ pub fn serial_read(port: String, baud: u32, window_ms: u64) -> Result<String, St
 /// values before they are applied — nothing is auto-saved.
 #[tauri::command]
 pub fn tcp_capture(mode: String, host: String, port: u16, window_ms: u64) -> Result<String, String> {
-    use std::io::Read;
+    use std::io::{Read, Write};
     use std::net::{TcpListener, TcpStream, ToSocketAddrs};
     use std::time::{Duration, Instant};
 
-    let window = Duration::from_millis(window_ms.clamp(1000, 60_000));
+    let window = Duration::from_millis(window_ms.clamp(1000, 120_000));
     let start = Instant::now();
 
     // Obtain a connected stream, honouring the overall window.
@@ -483,12 +502,33 @@ pub fn tcp_capture(mode: String, host: String, port: u16, window_ms: u64) -> Res
     let mut acc: Vec<u8> = Vec::new();
     let mut buf = [0u8; 8192];
     let mut idle_after_data = 0u32;
-    while start.elapsed() < window {
+    let mut got_eot = false;
+    // ASTM E1394 low-level handshake. Many analyzers (incl. ERBA) won't send their result
+    // unless the receiver acknowledges: ENQ → ACK, each frame (…ETX/ETB) → ACK, EOT = done.
+    // We ACK every ENQ/ETX/ETB byte and stop on EOT. For analyzers that just "dump" the
+    // message and close, these extra ACK bytes are harmless and the loop still reads it.
+    const ACK: [u8; 1] = [0x06];
+    while start.elapsed() < window && !got_eot {
         match stream.read(&mut buf) {
             Ok(0) => break, // peer closed — transmission complete
             Ok(n) => {
-                acc.extend_from_slice(&buf[..n]);
+                let chunk = &buf[..n];
+                acc.extend_from_slice(chunk);
                 idle_after_data = 0;
+                let mut acks = 0usize;
+                for &b in chunk {
+                    match b {
+                        0x05 | 0x03 | 0x17 => acks += 1, // ENQ / ETX / ETB
+                        0x04 => got_eot = true,          // EOT
+                        _ => {}
+                    }
+                }
+                for _ in 0..acks {
+                    let _ = stream.write_all(&ACK);
+                }
+                if acks > 0 {
+                    let _ = stream.flush();
+                }
             }
             Err(ref e)
                 if e.kind() == std::io::ErrorKind::WouldBlock

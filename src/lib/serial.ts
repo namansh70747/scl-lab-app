@@ -7,6 +7,12 @@ export async function listSerialPorts(): Promise<string[]> {
   return invoke<string[]>("serial_list_ports");
 }
 
+/** This PC's LAN IP(s) — shown in Settings → Analyzer so the user knows the H360 "Host IP". */
+export async function localIps(): Promise<string[]> {
+  if (!isTauri()) return [];
+  try { return await invoke<string[]>("local_ips"); } catch { return []; }
+}
+
 /** Read raw text from the analyzer's serial port within a time window. */
 export async function readSerialRaw(port: string, baud: number, windowMs = 6000): Promise<string> {
   if (!isTauri()) throw new Error("Serial reading is only available in the desktop app.");
@@ -36,9 +42,10 @@ export async function readAnalyzerConfigured(s: Record<string, string>): Promise
       s.analyzer_tcp_mode || 'listen',
       s.analyzer_host || '',
       Number(s.analyzer_tcp_port || '5000'),
-      15000,
+      // Wide window: the operator clicks "Read", walks to the H360 and presses transmit.
+      60000,
     );
     return parseAnalyzer(raw);
   }
-  return readAnalyzer(s.analyzer_port || '', Number(s.analyzer_baud || '9600'), 8000);
+  return readAnalyzer(s.analyzer_port || '', Number(s.analyzer_baud || '9600'), 20000);
 }

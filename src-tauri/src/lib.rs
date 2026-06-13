@@ -93,6 +93,7 @@ pub fn run() {
             commands::serial_list_ports,
             commands::serial_read,
             commands::tcp_capture,
+            commands::local_ips,
             commands::whatsapp_send_document,
             commands::copy_file_to_clipboard,
             commands::save_text_file,
