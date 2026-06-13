@@ -65,6 +65,12 @@ pub fn run() {
             sql: include_str!("../migrations/0010_fix_ocb_choices.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 11,
+            description: "eag_decimals",
+            sql: include_str!("../migrations/0011_eag_decimals.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
