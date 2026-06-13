@@ -34,7 +34,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     if (open) { setQ(""); setTimeout(() => inputRef.current?.focus(), 30); }
   }, [open]);
 
-  const { data: patients = [] } = useQuery({
+  const { data: patients = [], isFetching } = useQuery({
     queryKey: ["palette-search", q],
     queryFn: () => searchPatients(q.trim(), 8),
     enabled: open && q.trim().length >= 1,
@@ -68,6 +68,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             onKeyDown={e => {
               if (e.key === "Escape") onClose();
               if (e.key === "Enter") {
+                // Don't act on results that are still loading for the current query.
+                if (q.trim() && isFetching) return;
                 const first = patients[0];
                 if (first) go(first.status === "approved" ? `/report/${first.id}` : `/result-entry/${first.id}`);
                 else if (pages[0]) go(pages[0].to);

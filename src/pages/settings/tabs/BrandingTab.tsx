@@ -83,8 +83,24 @@ function ImagePicker({
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result;
-      if (typeof result === "string") onPicked(result);
-      else onError("Could not read the image.");
+      if (typeof result !== "string") { onError("Could not read the image."); return; }
+      // Downscale to a sensible max so a phone-camera logo doesn't bloat the database and slow
+      // every report/PDF. Keeps aspect ratio; PNG preserves transparency for signatures.
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 480;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        if (scale >= 1) { onPicked(result); return; }   // already small enough
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { onPicked(result); return; }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        onPicked(canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => onPicked(result);   // fall back to the original if decode fails
+      img.src = result;
     };
     reader.onerror = () => onError(errMessage(reader.error) || "Could not read the image.");
     reader.readAsDataURL(file);

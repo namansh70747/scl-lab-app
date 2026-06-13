@@ -49,14 +49,33 @@ export function DialogHost() {
 
   useEffect(() => {
     opener = (c) => {
+      // If a dialog is already open, resolve it as cancelled before replacing it — otherwise
+      // its awaiting caller would hang forever.
+      setCfg(prev => {
+        if (prev) (prev.resolve as (v: string | null | boolean) => void)(prev.kind === "prompt" ? null : false);
+        return c;
+      });
       setValue(c.kind === "prompt" ? (c.defaultValue ?? "") : "");
-      setCfg(c);
     };
     return () => { opener = null; };
   }, []);
 
   useEffect(() => {
     if (cfg?.kind === "prompt") setTimeout(() => inputRef.current?.focus(), 30);
+  }, [cfg]);
+
+  // Escape cancels ANY dialog (the prompt input also handles it, but a confirm has no input).
+  useEffect(() => {
+    if (!cfg) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        (cfg.resolve as (v: string | null | boolean) => void)(cfg.kind === "prompt" ? null : false);
+        setCfg(null);
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
   }, [cfg]);
 
   if (!cfg) return null;

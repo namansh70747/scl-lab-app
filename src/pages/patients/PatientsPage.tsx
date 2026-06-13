@@ -259,12 +259,13 @@ function ResultsTable({
             return (
               <div
                 key={p.id}
+                ref={virtualizer.measureElement}
+                data-index={vi.index}
                 className={cn(
                   COLS,
                   "group absolute top-0 left-0 w-full border-b border-[#f6f5f3] last:border-0 hover:bg-[#faf9f7] text-[13.5px] transition-colors"
                 )}
                 style={{
-                  height: vi.size,
                   transform: `translateY(${vi.start}px)`,
                 }}
               >

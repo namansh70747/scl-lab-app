@@ -17,13 +17,16 @@ export function KeyboardShortcuts({ onOpenPalette }: { onOpenPalette: () => void
       const el = e.target as HTMLElement;
       const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable;
 
+      // Palette is safe to open from anywhere (non-destructive).
       if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'f')) {
         e.preventDefault(); onOpenPalette(); return;
       }
+      // Everything else (incl. Ctrl+N → new patient) must NOT fire while typing — it would
+      // navigate away and discard a half-filled form.
+      if (typing) return;
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault(); navigate('/new-patient'); return;
       }
-      if (typing) return;
 
       if (e.key === 'g') { lastG.current = Date.now(); return; }
       if (Date.now() - lastG.current < 800 && GO_MAP[e.key]) {

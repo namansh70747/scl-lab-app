@@ -38,7 +38,7 @@ export function Combobox<T extends string | number>({
     ? options.filter(o => o.label.toLowerCase().includes(q))
     : options;
 
-  useEffect(() => { setHl(0); }, [query, open]);
+  useEffect(() => { setHl(0); }, [query, open, filtered.length]);
 
   // Close on outside click.
   useEffect(() => {
@@ -67,7 +67,7 @@ export function Combobox<T extends string | number>({
     else if (e.key === "Enter") {
       e.preventDefault();
       e.stopPropagation();
-      const o = filtered[hl];
+      const o = filtered[Math.min(hl, filtered.length - 1)];   // clamp in case the list shrank
       if (o) pick(o.value);
     } else if (e.key === "Escape") { e.stopPropagation(); setOpen(false); setQuery(""); }
   }
