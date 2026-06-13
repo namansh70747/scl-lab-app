@@ -13,11 +13,20 @@ export async function needsSetup(): Promise<boolean> {
  * the seeded placeholder admin). Writes are ungated (there's no session yet). Returns the
  * new admin user for immediate sign-in.
  */
-export async function completeSetup(input: {
-  labName: string; username: string; displayName: string; password: string;
-}): Promise<User> {
+export interface SetupInput {
+  labName: string;
+  address: string;
+  phones: string;
+  timings: string;
+  inchargeName: string;   // shown as the report signatory + the app account's display name
+  inchargeQual: string;   // e.g. DMLT
+  username: string;
+  password: string;
+}
+
+export async function completeSetup(input: SetupInput): Promise<User> {
   const username = input.username.trim().toLowerCase();
-  const display = input.displayName.trim() || input.username.trim();
+  const incharge = input.inchargeName.trim() || input.username.trim();
   const hash = await hashPassword(input.password);
 
   const admins = await dbQuery<{ id: number }>("SELECT id FROM users WHERE role='admin' ORDER BY id LIMIT 1");
@@ -25,16 +34,27 @@ export async function completeSetup(input: {
   if (adminId) {
     await dbExecute(
       `UPDATE users SET username=?, display_name=?, password_hash=?, force_password_change=0, active=1, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-      [username, display, hash, adminId]
+      [username, incharge, hash, adminId]
     );
   } else {
     await dbExecute(
       `INSERT INTO users(username,display_name,role,password_hash,force_password_change,active) VALUES(?,?,'admin',?,0,1)`,
-      [username, display, hash]
+      [username, incharge, hash]
     );
   }
 
-  for (const [k, v] of [["lab_name", input.labName.trim()], ["collected_at_default", input.labName.trim()], ["setup_done", "1"]] as const) {
+  // All the letterhead/report credentials, written ungated (no session yet).
+  const settings: [string, string][] = [
+    ["lab_name", input.labName.trim()],
+    ["address_line", input.address.trim()],
+    ["phones", input.phones.trim()],
+    ["technician_name", incharge],
+    ["technician_qual", input.inchargeQual.trim()],
+    ["setup_done", "1"],
+  ];
+  if (input.timings.trim()) settings.push(["timings", input.timings.trim()]);
+  for (const [k, v] of settings) {
+    if (!v) continue;
     await dbExecute(
       `INSERT INTO settings(key,value,updated_at) VALUES(?,?,CURRENT_TIMESTAMP)
        ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP`,

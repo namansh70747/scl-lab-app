@@ -41,6 +41,14 @@ export function OnboardingPage({ licensed, status, onDone }: { licensed: boolean
           <Stepper step={step} showActivate={!licensed} />
         </div>
 
+        {import.meta.env.DEV && (
+          <div className="mt-4 flex items-center gap-2 text-[11px]">
+            <span className="text-white/35 uppercase tracking-wider">Dev preview:</span>
+            <button onClick={() => setStep("activate")} className={cn("px-2.5 py-1 rounded-full border", step === "activate" ? "border-[#818cf8] text-[#c7cbff]" : "border-white/15 text-white/50")}>Pay & activate</button>
+            <button onClick={() => setStep("setup")} className={cn("px-2.5 py-1 rounded-full border", step === "setup" ? "border-[#818cf8] text-[#c7cbff]" : "border-white/15 text-white/50")}>Set up lab</button>
+          </div>
+        )}
+
         {step === "activate"
           ? <ActivateStep status={status} onActivated={() => setStep("setup")} />
           : <SetupStep onDone={onDone} />}
@@ -165,64 +173,88 @@ function ActivateStep({ status, onActivated }: { status: LicenseStatus; onActiva
 function SetupStep({ onDone }: { onDone: () => void }) {
   const setUser = useSession(s => s.setUser);
   const navigate = useNavigate();
-  const [labName, setLabName] = useState("");
-  const [display, setDisplay] = useState("");
-  const [username, setUsername] = useState("");
-  const [pw, setPw] = useState("");
-  const [pw2, setPw2] = useState("");
+  const [f, setF] = useState({ labName: "", address: "", phones: "", timings: "", incharge: "", qual: "", username: "", pw: "", pw2: "" });
+  const set = (k: keyof typeof f) => (v: string) => setF(p => ({ ...p, [k]: v }));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
   async function finish() {
     setErr("");
-    if (!labName.trim()) return setErr("Enter your laboratory's name.");
-    if (username.trim().length < 3) return setErr("Choose a username of at least 3 characters.");
-    if (/\s/.test(username.trim())) return setErr("Username can't contain spaces.");
-    if (pw.length < 4) return setErr("Password must be at least 4 characters.");
-    if (pw !== pw2) return setErr("Passwords do not match.");
+    if (!f.labName.trim()) return setErr("Enter your laboratory's name.");
+    if (!f.incharge.trim()) return setErr("Enter the lab in-charge / signatory name (it appears on reports).");
+    if (f.username.trim().length < 3) return setErr("Choose a username of at least 3 characters.");
+    if (/\s/.test(f.username.trim())) return setErr("Username can't contain spaces.");
+    if (f.pw.length < 4) return setErr("Password must be at least 4 characters.");
+    if (f.pw !== f.pw2) return setErr("Passwords do not match.");
     setBusy(true);
     try {
-      const user = await completeSetup({ labName, username, displayName: display, password: pw });
+      const user = await completeSetup({
+        labName: f.labName, address: f.address, phones: f.phones, timings: f.timings,
+        inchargeName: f.incharge, inchargeQual: f.qual, username: f.username, password: f.pw,
+      });
       setUser(user);
-      toast.success(`Welcome, ${labName.trim()}!`);
+      toast.success(`Welcome, ${f.labName.trim()}!`);
       onDone();
       navigate("/dashboard");
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)); setBusy(false); }
   }
 
   return (
-    <div className="mt-8 mx-auto max-w-md rounded-3xl border border-white/10 glass-dark p-8 animate-pop-in">
+    <div className="mt-7 mx-auto max-w-2xl rounded-3xl border border-white/10 glass-dark p-8 animate-pop-in">
       <div className="flex items-center gap-2 text-[#c7cbff] text-[12px] font-semibold uppercase tracking-[0.15em]">
         <Building2 size={15} /> Set up your laboratory
       </div>
-      <h2 className="mt-2 text-2xl font-bold">Name your lab &amp; create your login</h2>
-      <p className="mt-1 text-[13px] text-white/45">This name appears on your reports. You'll sign in with these next time.</p>
+      <h2 className="mt-2 text-2xl font-bold">Your lab details &amp; login</h2>
+      <p className="mt-1 text-[13px] text-white/45">These print on every report. You'll sign in with the username &amp; password next time. (You can change all of this later in Settings.)</p>
 
       <div className="mt-6 space-y-4">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/45">Report letterhead</div>
         <div>
-          <label className={fieldLabel}>Laboratory name</label>
-          <input value={labName} onChange={e => setLabName(e.target.value.toUpperCase())} placeholder="CITY DIAGNOSTIC LABORATORY"
-            className="login-input uppercase" autoFocus />
+          <label className={fieldLabel}>Laboratory name *</label>
+          <input value={f.labName} onChange={e => set("labName")(e.target.value.toUpperCase())} placeholder="CITY DIAGNOSTIC LABORATORY" className="login-input uppercase" autoFocus />
         </div>
         <div>
-          <label className={fieldLabel}>Your name (shown in the app)</label>
-          <input value={display} onChange={e => setDisplay(e.target.value)} placeholder="Dr. / Owner name" className="login-input" />
+          <label className={fieldLabel}>Address</label>
+          <input value={f.address} onChange={e => set("address")(e.target.value)} placeholder="Main Road, Your City, District" className="login-input" />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className={fieldLabel}>Username</label>
-            <input value={username} onChange={e => setUsername(e.target.value)} placeholder="admin" autoCapitalize="off" spellCheck={false} className="login-input" />
+            <label className={fieldLabel}>Phone number(s)</label>
+            <input value={f.phones} onChange={e => set("phones")(e.target.value)} placeholder="98xxxxxxxx / 94xxxxxxxx" className="login-input" inputMode="tel" />
           </div>
           <div>
-            <label className={fieldLabel}>Password</label>
-            <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="••••••" className="login-input" />
+            <label className={fieldLabel}>Timings (optional)</label>
+            <input value={f.timings} onChange={e => set("timings")(e.target.value)} placeholder="8:00 am – 8:00 pm" className="login-input" />
           </div>
         </div>
-        <div>
-          <label className={fieldLabel}>Confirm password</label>
-          <input type="password" value={pw2} onChange={e => setPw2(e.target.value)} placeholder="Re-enter password"
-            onKeyDown={e => { if (e.key === "Enter") finish(); }} className="login-input" />
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
+          <div>
+            <label className={fieldLabel}>Lab in-charge / signatory name *</label>
+            <input value={f.incharge} onChange={e => set("incharge")(e.target.value)} placeholder="Rajesh Kumar" className="login-input" />
+          </div>
+          <div>
+            <label className={fieldLabel}>Qualification</label>
+            <input value={f.qual} onChange={e => set("qual")(e.target.value)} placeholder="DMLT" className="login-input sm:w-32" />
+          </div>
         </div>
+
+        <div className="pt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/45">Your login</div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className={fieldLabel}>Username *</label>
+            <input value={f.username} onChange={e => set("username")(e.target.value)} placeholder="admin" autoCapitalize="off" spellCheck={false} className="login-input" />
+          </div>
+          <div>
+            <label className={fieldLabel}>Password *</label>
+            <input type="password" value={f.pw} onChange={e => set("pw")(e.target.value)} placeholder="••••••" className="login-input" />
+          </div>
+          <div>
+            <label className={fieldLabel}>Confirm *</label>
+            <input type="password" value={f.pw2} onChange={e => set("pw2")(e.target.value)} placeholder="••••••"
+              onKeyDown={e => { if (e.key === "Enter") finish(); }} className="login-input" />
+          </div>
+        </div>
+
         {err && <p className="text-[13px] text-red-300 bg-red-500/15 border border-red-400/25 rounded-xl px-3 py-2">{err}</p>}
         <button onClick={finish} disabled={busy} className="login-btn">
           {busy ? <Loader2 size={18} className="animate-spin" /> : <><ShieldCheck size={17} /> Finish &amp; enter</>}

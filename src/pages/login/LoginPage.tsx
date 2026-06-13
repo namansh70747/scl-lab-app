@@ -108,7 +108,7 @@ export function LoginPage() {
       {/* ── Brand hero (left) ── */}
       <aside className="relative hidden lg:flex flex-col justify-between p-14">
         <div className="relative flex items-center gap-3.5">
-          <NamAstaMark size={52} glow />
+          <NamAstaMark size={52} animated />
           <div className="leading-tight">
             <p className="font-bold tracking-wide text-white/95">NamAsta Diagnostics</p>
             <p className="text-[11px] text-white/40 tracking-[0.18em] uppercase">Laboratory Management Suite</p>
@@ -134,7 +134,7 @@ export function LoginPage() {
         </div>
 
         <p className="relative text-xs text-white/35">
-          G.T. Road, Village Nangal Bhur, Teh. &amp; Distt. Pathankot · v{version}
+          {settings.lab_name ? `${settings.lab_name}${settings.address_line ? ` · ${settings.address_line}` : ''}` : 'NamAsta Diagnostics'} · v{version}
         </p>
       </aside>
 
@@ -143,7 +143,7 @@ export function LoginPage() {
         <div className="w-full max-w-sm rounded-3xl border border-white/10 glass-dark p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] animate-pop-in">
           {/* mobile logo */}
           <div className="lg:hidden flex flex-col items-center mb-7">
-            <NamAstaMark size={52} glow />
+            <NamAstaMark size={52} animated />
             <h1 className="mt-3 text-lg font-bold text-white">NamAsta Diagnostics</h1>
           </div>
 
@@ -237,7 +237,7 @@ export function LoginPage() {
             </>
           )}
 
-          <p className="lg:hidden text-center text-xs text-white/35 mt-8">Nangal Bhur, Pathankot · v{version}</p>
+          <p className="lg:hidden text-center text-xs text-white/35 mt-8">{settings.lab_name || 'NamAsta Diagnostics'} · v{version}</p>
         </div>
       </main>
     </div>

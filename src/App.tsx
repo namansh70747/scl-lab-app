@@ -78,7 +78,7 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 function LicenseSplash() {
   return (
     <div className="flex h-screen items-center justify-center" style={{ background: "linear-gradient(150deg,#14161f,#0a0b10)" }}>
-      <div className="animate-pulse"><NamAstaMark size={64} glow /></div>
+      <div className="animate-pulse"><NamAstaMark size={64} animated /></div>
     </div>
   );
 }
@@ -95,8 +95,7 @@ function LicenseGate() {
   const [phase, setPhase] = useState<GatePhase>({ kind: "loading" });
   const check = async () => {
     try {
-      const status = await getLicenseStatus();
-      if (status.dev) { setPhase({ kind: "app" }); return; }            // developer: never gated
+      const status = await getLicenseStatus();   // dev → active:true (no payment), but still first-run setup
       if (!status.active) { setPhase({ kind: "onboard", licensed: false, status }); return; }
       const setup = await needsSetup();
       setPhase(setup ? { kind: "onboard", licensed: true, status } : { kind: "app" });

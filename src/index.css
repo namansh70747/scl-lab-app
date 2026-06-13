@@ -81,6 +81,20 @@
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-14px); }
   }
+  @keyframes logo-glow {
+    0%, 100% { filter: drop-shadow(0 6px 16px rgba(99, 102, 241, 0.45)); }
+    50% { filter: drop-shadow(0 10px 28px rgba(34, 211, 238, 0.55)); }
+  }
+  @keyframes logo-sheen {
+    0% { transform: translateX(-130%) skewX(-18deg); opacity: 0; }
+    18% { opacity: 0.75; }
+    40% { transform: translateX(130%) skewX(-18deg); opacity: 0; }
+    100% { transform: translateX(130%) skewX(-18deg); opacity: 0; }
+  }
+}
+
+@layer utilities {
+  .logo-glow { animation: logo-glow 3.2s ease-in-out infinite; }
 }
 
 @layer base {

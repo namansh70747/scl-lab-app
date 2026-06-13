@@ -79,7 +79,7 @@ export function AppShell() {
 
         {/* brand */}
         <div className={cn("relative flex items-center gap-3 h-[64px] px-4", collapsed && "justify-center px-0")}>
-          <NamAstaMark size={collapsed ? 34 : 38} glow />
+          <NamAstaMark size={collapsed ? 34 : 38} />
           {!collapsed && (
             <div className="min-w-0 leading-tight">
               <p className="text-[13.5px] font-bold text-white/95 truncate tracking-wide">NamAsta</p>
