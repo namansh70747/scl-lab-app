@@ -453,6 +453,72 @@ pub fn tcp_capture(mode: String, host: String, port: u16, window_ms: u64) -> Res
     Ok(String::from_utf8_lossy(&acc).into_owned())
 }
 
+/// Send the report PDF to a patient over the WhatsApp Business Cloud API.
+/// Uploads the PDF as media, then sends it as a document message with a caption.
+/// `to` must be the recipient in international format without '+' (e.g. 919876543210).
+#[tauri::command]
+pub fn whatsapp_send_document(
+    token: String,
+    phone_number_id: String,
+    to: String,
+    pdf_path: String,
+    filename: String,
+    caption: String,
+    api_version: Option<String>,
+) -> Result<String, String> {
+    use reqwest::blocking::multipart;
+    let ver = api_version.unwrap_or_else(|| "v21.0".to_string());
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|e| format!("Could not start HTTP client: {e}"))?;
+
+    // 1) Upload the PDF as WhatsApp media.
+    let part = multipart::Part::file(&pdf_path)
+        .map_err(|e| format!("Cannot read PDF {pdf_path}: {e}"))?
+        .mime_str("application/pdf")
+        .map_err(|e| format!("Bad attachment type: {e}"))?;
+    let form = multipart::Form::new()
+        .text("messaging_product", "whatsapp")
+        .part("file", part);
+    let up = client
+        .post(format!("https://graph.facebook.com/{ver}/{phone_number_id}/media"))
+        .bearer_auth(&token)
+        .multipart(form)
+        .send()
+        .map_err(|e| format!("WhatsApp media upload failed: {e}"))?;
+    let up_status = up.status();
+    let up_text = up.text().unwrap_or_default();
+    if !up_status.is_success() {
+        return Err(format!("WhatsApp media upload error {up_status}: {up_text}"));
+    }
+    let media_id = serde_json::from_str::<serde_json::Value>(&up_text)
+        .ok()
+        .and_then(|v| v.get("id").and_then(|x| x.as_str().map(|s| s.to_string())))
+        .ok_or_else(|| format!("No media id returned by WhatsApp: {up_text}"))?;
+
+    // 2) Send the document message.
+    let body = serde_json::json!({
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": to,
+        "type": "document",
+        "document": { "id": media_id, "filename": filename, "caption": caption }
+    });
+    let msg = client
+        .post(format!("https://graph.facebook.com/{ver}/{phone_number_id}/messages"))
+        .bearer_auth(&token)
+        .json(&body)
+        .send()
+        .map_err(|e| format!("WhatsApp send failed: {e}"))?;
+    let st = msg.status();
+    let txt = msg.text().unwrap_or_default();
+    if !st.is_success() {
+        return Err(format!("WhatsApp send error {st}: {txt}"));
+    }
+    Ok(txt)
+}
+
 /// Return the app's package version.
 #[tauri::command]
 pub fn app_version() -> String {

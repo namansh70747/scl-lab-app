@@ -151,7 +151,7 @@ export function ReportPreviewPage() {
     return displayRange(findRange(o.ranges, patient.sex, patientAgeDays(patient.age, patient.age_unit)));
   }
 
-  async function withLog(channel: 'print' | 'pdf' | 'whatsapp_semi' | 'email' | 'sms', target: string, key: string, fn: () => Promise<void> | void) {
+  async function withLog(channel: 'print' | 'pdf' | 'whatsapp_semi' | 'whatsapp_api' | 'email' | 'sms', target: string, key: string, fn: () => Promise<void> | void) {
     setBusy(key);
     try {
       await fn();
@@ -218,15 +218,36 @@ export function ReportPreviewPage() {
       technicianName: settings.technician_name ?? 'Rajesh Kumar (Vicky)',
       technicianQual: settings.technician_qual ?? 'DMLT',
     });
+    // Fully-automatic Cloud API path (sends the actual PDF) when configured.
+    const apiReady = settings.whatsapp_mode === 'api' && settings.bsp_api_key && settings.wa_phone_id;
+    if (apiReady) {
+      withLog('whatsapp_api', `91${patient.phone}`, 'whatsapp', async () => {
+        const pdfPath = await makePdf();
+        if (!pdfPath) throw new Error('Could not generate the report PDF.');
+        const { sendWhatsAppDocument } = await import('@/lib/whatsapp');
+        await sendWhatsAppDocument({
+          token: settings.bsp_api_key!,
+          phoneNumberId: settings.wa_phone_id!,
+          apiVersion: settings.wa_api_version || 'v21.0',
+          to: patient.phone,
+          pdfPath,
+          filename: `SCL-Report-${patient.test_no}.pdf`,
+          caption: msg,
+        });
+        alert('Report PDF sent automatically on WhatsApp.');
+      });
+      return;
+    }
+    // Semi-automatic fallback (free, dad's number): open chat + reveal the PDF to attach.
     withLog('whatsapp_semi', `91${patient.phone}`, 'whatsapp', async () => {
-      const pdfPath = (await makePdf()) || undefined;     // 1. render & save the PDF
-      await sendWhatsAppSemi(patient.phone, msg, pdfPath); // 2. open chat + reveal PDF
+      const pdfPath = (await makePdf()) || undefined;
+      await sendWhatsAppSemi(patient.phone, msg, pdfPath);
       if (pdfPath) {
         alert(
           'WhatsApp chat opened with the message ready.\n\n' +
-          'The report PDF has been highlighted in its folder — drag it into the chat ' +
-          '(or click 📎 → Document and pick the highlighted file), then press Send.\n\n' +
-          '(Fully automatic PDF sending needs the WhatsApp Business API — ask to enable it.)'
+          'To attach the report: click the “+” (attach) button → Document → choose the ' +
+          'highlighted PDF, then press Send.\n\n' +
+          '(For 100% automatic PDF sending, set up the WhatsApp Business API in Settings → WhatsApp.)'
         );
       }
     });

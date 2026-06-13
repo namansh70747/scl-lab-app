@@ -1,6 +1,6 @@
 import { open } from '@tauri-apps/plugin-shell';
 import { revealInFolder } from '@/lib/printing';
-import { isTauri } from '@/lib/tauri';
+import { invoke, isTauri } from '@/lib/tauri';
 
 export interface WaMessageInput {
   title: string;
@@ -12,7 +12,37 @@ export interface WaMessageInput {
 
 export function buildWhatsAppMessage(i: WaMessageInput): string {
   const testList = i.tests.length > 90 ? i.tests.slice(0, 90) + '…' : i.tests;
-  return `Dear ${i.title} ${i.name}, your lab report (${testList}) from SHARMA CLINICAL LABORATORY, Nangal Bhur is ready. The PDF report is attached below. — ${i.technicianName}, ${i.technicianQual}`;
+  return `Dear ${i.title} ${i.name}, your lab report (${testList}) from SHARMA CLINICAL LABORATORY, Nangal Bhur is ready. — ${i.technicianName}, ${i.technicianQual}`;
+}
+
+export interface WaDocArgs {
+  token: string;
+  phoneNumberId: string;
+  to: string;          // 10-digit mobile; 91 is prefixed automatically
+  pdfPath: string;
+  filename: string;
+  caption: string;
+  apiVersion?: string;
+}
+
+/**
+ * Fully-automatic delivery via the WhatsApp Business Cloud API: uploads the report PDF
+ * and sends it as a document message. Requires a Cloud-API phone number + access token
+ * (configured in Settings → WhatsApp) — NOT a personal WhatsApp number.
+ */
+export async function sendWhatsAppDocument(a: WaDocArgs): Promise<string> {
+  const digits = a.to.replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '');
+  if (digits.length !== 10) throw new Error(`"${a.to}" is not a valid 10-digit mobile number.`);
+  if (!a.token || !a.phoneNumberId) throw new Error('WhatsApp Cloud API is not configured (token / phone number ID missing).');
+  return invoke<string>('whatsapp_send_document', {
+    token: a.token,
+    phoneNumberId: a.phoneNumberId,
+    to: `91${digits}`,
+    pdfPath: a.pdfPath,
+    filename: a.filename,
+    caption: a.caption,
+    apiVersion: a.apiVersion || 'v21.0',
+  });
 }
 
 /** Semi-automatic WhatsApp (§8A.8 / Phase 6): open wa.me prefilled, then reveal the

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Save, Send } from "lucide-react";
-import { Card, TabHeader, TextField, SelectField, PrimaryButton, SecondaryButton } from "../ui";
+import { Card, TabHeader, TextField, SelectField, PrimaryButton, SecondaryButton, NoteBox } from "../ui";
 import { useSettingsForm } from "../useSettingsForm";
 import { sendWhatsAppSemi } from "@/lib/whatsapp";
 import { errMessage } from "../toast";
 
-const KEYS = ["whatsapp_mode", "bsp_api_key", "bsp_template_name"];
+const KEYS = ["whatsapp_mode", "bsp_api_key", "wa_phone_id", "bsp_template_name"];
 
 export function WhatsAppTab({ settings }: { settings: Record<string, string> }) {
   const f = useSettingsForm(settings, KEYS);
@@ -65,18 +65,32 @@ export function WhatsAppTab({ settings }: { settings: Record<string, string> }) 
 
       {mode === "api" && (
         <>
+          <NoteBox tone="warn">
+            Automatic sending uses the <b>WhatsApp Business Cloud API</b> and needs a
+            <b> dedicated phone number</b> (not the lab's personal WhatsApp), a free Meta Business
+            account, and a permanent access token. Get the <b>Access token</b> and <b>Phone number ID</b>
+            from Meta → WhatsApp → API Setup. See the onboarding guide for the full steps.
+          </NoteBox>
           <TextField
-            label="BSP API key"
+            label="Access token"
             type="password"
             value={f.get("bsp_api_key")}
             onChange={(v) => f.set("bsp_api_key", v)}
-            placeholder="Provided by your WhatsApp Business Solution Provider"
+            placeholder="Permanent token from Meta (System User)"
           />
           <TextField
-            label="Template name"
+            label="Phone number ID"
+            value={f.get("wa_phone_id")}
+            onChange={(v) => f.set("wa_phone_id", v)}
+            placeholder="e.g. 1029384756xxxxx"
+            hint="From Meta → WhatsApp → API Setup (not the phone number itself)."
+          />
+          <TextField
+            label="Template name (for first contact)"
             value={f.get("bsp_template_name")}
             onChange={(v) => f.set("bsp_template_name", v)}
             placeholder="report_ready"
+            hint="Optional. Needed only to message patients who haven't messaged the lab in 24h."
           />
         </>
       )}
