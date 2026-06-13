@@ -24,6 +24,13 @@ import { SCLLogo } from "@/components/common/SCLLogo";
 
 const NORMAL_QUALITATIVE = new Set(['NEGATIVE', 'NIL', 'NOT SEEN', 'ABSENT', 'NORMAL', 'CLEAR', 'PALE YELLOW']);
 
+/** Escape user text before putting it into the email HTML body (patient name etc.). */
+function esc(s: string): string {
+  return s.replace(/[&<>"']/g, c => (
+    c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;'
+  ));
+}
+
 /**
  * Which discipline each panel prints under. On the printed report the discipline
  * (e.g. BIOCHEMISTRY) is a single centred heading, and the individual profiles within
@@ -191,11 +198,16 @@ export function ReportPreviewPage() {
   );
   const renderRows = (rows: OrderWithResult[]) => rows.map(o => {
     const value = resultValue(o);
-    const abnormal = flagOf(o) !== '';
+    const flag = flagOf(o);
+    const abnormal = flag !== '';
+    // High/Low get an arrow so the direction is unmistakable; qualitative-abnormal gets a *.
+    const marker = flag === 'H' ? ' ↑ H' : flag === 'L' ? ' ↓ L' : flag === 'A' ? ' *' : '';
     return (
       <tr key={o.order.id}>
         <td className="py-[3px] pr-2 text-gray-950">{o.test.name}</td>
-        <td className={cn("py-[3px] px-2 tabular-nums text-gray-950", abnormal && "font-bold")}>{value || '—'}</td>
+        <td className={cn("py-[3px] px-2 tabular-nums text-gray-950", abnormal && "font-bold")}>
+          {value || '—'}{abnormal && <span className="font-bold">{marker}</span>}
+        </td>
         <td className="py-[3px] px-2 text-gray-800">{o.test.unit && o.test.unit !== '—' ? o.test.unit : ''}</td>
         <td className="py-[3px] pl-2 text-gray-800">{rangeText(o)}</td>
       </tr>
@@ -367,14 +379,17 @@ export function ReportPreviewPage() {
   // Core email send (no UI side-effects) — shared by the manual button and auto-on-approve.
   async function emailCore(): Promise<void> {
     const host = settings.smtp_host, port = settings.smtp_port, user = settings.smtp_user, pass = settings.smtp_pass;
-    const pdfPath = (await makePdf()) || null;   // "" (browser) → null so we don't attach a missing file
+    const pdfPath = await makePdf();
+    // The whole point of the email is the attached report — never send "please find attached"
+    // with nothing attached.
+    if (!pdfPath) throw new Error('Could not generate the report PDF — email not sent.');
     const tech = settings.technician_name ?? 'Rajesh Kumar (Vicky)';
     const bodyHtml = `<div style="font-family:Inter,Arial,sans-serif;color:#1a1a1e">
-      <p>Dear ${patient!.title} ${patient!.name},</p>
-      <p>Please find attached your laboratory report (${panelSummary()}) from
+      <p>Dear ${esc(patient!.title)} ${esc(patient!.name)},</p>
+      <p>Please find attached your laboratory report (${esc(panelSummary())}) from
       <b style="color:#7b1b1b">Sharma Clinical Laboratory</b>, Nangal Bhur, Pathankot.</p>
       <p style="color:#6b7280;font-size:13px">This is a computer-generated report. For queries, contact the laboratory.</p>
-      <p style="margin-top:18px">— ${tech}<br/>${settings.technician_qual ?? 'DMLT (PTU)'}</p>
+      <p style="margin-top:18px">— ${esc(tech)}<br/>${esc(settings.technician_qual ?? 'DMLT (PTU)')}</p>
     </div>`;
     await sendEmail({
       host, port: parseInt(port, 10) || 587, username: user, password: pass,
