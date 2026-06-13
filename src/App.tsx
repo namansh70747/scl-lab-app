@@ -3,6 +3,7 @@ import { Suspense, lazy, Component, type ReactNode } from "react";
 import { useSession } from "@/lib/session";
 import { AppShell } from "@/app/AppShell";
 import { DialogHost } from "@/lib/dialog";
+import { ToastHost } from "@/lib/toast";
 
 // Catches a failed lazy-chunk load (e.g. after an update swaps chunk hashes) so the app
 // shows a recoverable message instead of a blank white screen.
@@ -73,6 +74,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <DialogHost />
+      <ToastHost />
       <ChunkErrorBoundary>
       <Suspense fallback={<PageFallback />}>
         <Routes>

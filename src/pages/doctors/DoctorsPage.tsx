@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/lib/toast";
 import {
   listDoctorsWithCounts,
   upsertDoctor,
@@ -151,7 +152,7 @@ function DoctorDialog({
       else await upsertDoctor(name.trim(), degree.trim() || undefined);
     },
     onSuccess: () => onSaved(),
-    onError: (e: unknown) => alert(e instanceof Error ? e.message : String(e)),
+    onError: (e: unknown) => toast.error(e),
   });
 
   const submit = (e: React.FormEvent) => {

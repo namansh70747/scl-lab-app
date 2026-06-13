@@ -11,6 +11,7 @@ import { nowISO } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Search, X, Plus, Save, Zap } from "lucide-react";
 import { Combobox } from "@/components/common/Combobox";
+import { toast } from "@/lib/toast";
 
 interface SelectedTest {
   test: Test;
@@ -156,8 +157,9 @@ export function NewPatientPage() {
       const id = await upsertDoctor(dn.toUpperCase());
       await qc.invalidateQueries({ queryKey: ['doctors'] });
       setDoctorId(id);
+      toast.success(`Dr. ${dn} added.`);
     } catch (err) {
-      alert(String(err));
+      toast.error(err);
     }
   }
 

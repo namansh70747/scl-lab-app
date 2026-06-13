@@ -13,6 +13,7 @@ import { readAnalyzerConfigured } from "@/lib/serial";
 import { matchToOrders, type AnalyzerMatch, type AnalyzerReading } from "@/lib/astm";
 import { saveHistograms } from "@/lib/queries/analyzer";
 import { promptDialog } from "@/lib/dialog";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Check, CheckCircle, ChevronLeft, FileText, Unlock, X, Cable, Plus } from "lucide-react";
 
@@ -116,10 +117,12 @@ export function ResultEntryPage() {
     return computeFlag(o.test.result_type, value, o.ranges, patient.sex, ageDays);
   };
 
+  const [savedTick, setSavedTick] = useState(0);
   const saveMut = useMutation({
     mutationFn: ({ orderId, value, flag }: { orderId: number; value: string; flag: string }) =>
       saveResult(orderId, value, flag, user!.id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders', pid] }),
+    onSuccess: () => { setSavedTick(t => t + 1); qc.invalidateQueries({ queryKey: ['orders', pid] }); },
+    onError: (e) => toast.error(e),
   });
 
   const approveMut = useMutation({
@@ -151,7 +154,7 @@ export function ResultEntryPage() {
       setShowApprove(false);
       navigate(`/report/${pid}`);
     },
-    onError: (e) => alert(String(e)),
+    onError: (e) => toast.error(e),
   });
 
   const unlockMut = useMutation({
@@ -168,7 +171,7 @@ export function ResultEntryPage() {
       qc.invalidateQueries({ queryKey: ['today-patients'] });
       qc.invalidateQueries({ queryKey: ['patients-search'] });
     },
-    onError: (e) => { if (String(e).includes('cancelled')) return; alert(String(e)); },
+    onError: (e) => { if (String(e).includes('cancelled')) return; toast.error(e); },
   });
 
   // F9 = approve (only when not already approved, and not while another dialog is open)
@@ -219,11 +222,11 @@ export function ResultEntryPage() {
   async function readFromAnalyzer() {
     const conn = settings.analyzer_conn ?? 'network';
     if (conn === 'network' && settings.analyzer_tcp_mode === 'connect' && !settings.analyzer_host) {
-      alert('No analyzer IP is configured. Set it in Settings → Analyzer.');
+      toast.error('No analyzer IP is configured. Set it in Settings → Analyzer.');
       return;
     }
     if (conn === 'serial' && !settings.analyzer_port) {
-      alert('No analyzer port is configured. Set it in Settings → Analyzer.');
+      toast.error('No analyzer port is configured. Set it in Settings → Analyzer.');
       return;
     }
     setReading(true);
@@ -231,12 +234,12 @@ export function ResultEntryPage() {
       const r = await readAnalyzerConfigured(settings);
       const matches = matchToOrders(r, orders, localValues);
       if (!matches.length) {
-        alert('Data was received but none of the parameters matched this patient\'s ordered tests. Use Settings → Analyzer → Capture raw to check the format.');
+        toast.error('Data received, but no parameters matched this patient\'s tests. Use Settings → Analyzer → Capture raw to check the format.');
         return;
       }
       setAnalyzer({ matches, reading: r });
     } catch (e) {
-      alert(String(e));
+      toast.error(e);
     } finally {
       setReading(false);
     }
@@ -260,8 +263,9 @@ export function ResultEntryPage() {
         qc.invalidateQueries({ queryKey: ['dashboard-stats'] }),
       ]);
       setShowAddTest(false); setAddQuery(''); setAddResults([]);
+      toast.success('Test added.');
     } catch (e) {
-      alert(String(e));
+      toast.error(e);
     }
   }
 
@@ -288,7 +292,9 @@ export function ResultEntryPage() {
     qc.invalidateQueries({ queryKey: ['orders', pid] });
     setAnalyzer(null);
     if (failed.length) {
-      alert(`These values could not be saved — please re-enter them:\n• ${failed.join('\n• ')}`);
+      toast.error(`Could not save — please re-enter:\n• ${failed.join('\n• ')}`);
+    } else {
+      toast.success(`Imported ${analyzer.matches.length} value${analyzer.matches.length === 1 ? '' : 's'} from the analyzer.`);
     }
   }
 
@@ -331,6 +337,9 @@ export function ResultEntryPage() {
                     />
                   </div>
                   <span className="text-[11px] text-[#8a857d] tabular-nums">{progress}/{total} entered</span>
+                  {saveMut.isPending
+                    ? <span className="text-[11px] text-[#8a857d]">Saving…</span>
+                    : savedTick > 0 && <span className="flex items-center gap-1 text-[11px] text-[#16a34a]"><Check size={11} strokeWidth={2.4} /> All saved</span>}
                 </div>
               </div>
             )}

@@ -20,6 +20,7 @@ import { OrderWithResult, Panel } from "@/types";
 import { ChevronLeft, Printer, FileDown, MessageCircle, Mail, Check, ZoomIn, ZoomOut, Smartphone, ShieldCheck, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import { SCLLogo } from "@/components/common/SCLLogo";
 
 const NORMAL_QUALITATIVE = new Set(['NEGATIVE', 'NIL', 'NOT SEEN', 'ABSENT', 'NORMAL', 'CLEAR', 'PALE YELLOW']);
@@ -241,7 +242,7 @@ export function ReportPreviewPage() {
       setSent(s => ({ ...s, [key]: true }));
     } catch (err) {
       await logDelivery(pid, channel, target, 'failed', String(err));
-      alert(String(err));
+      toast.error(err);
     } finally {
       setBusy(null);
     }
@@ -303,7 +304,7 @@ export function ReportPreviewPage() {
       const path = await makePdf();
       if (path) {
         await revealInFolder(path);
-        alert(`PDF saved:\n${path}`);
+        toast.success('PDF saved to your reports folder.');
       }
     });
   }
@@ -331,7 +332,7 @@ export function ReportPreviewPage() {
           filename: `SCL-Report-${patient.test_no}.pdf`,
           caption: msg,
         });
-        alert('Report PDF sent automatically on WhatsApp.');
+        toast.success('Report sent on WhatsApp.');
       });
       return;
     }
@@ -355,9 +356,9 @@ export function ReportPreviewPage() {
   }
 
   function handleSms() {
-    if (!patient?.phone) { alert('This patient has no mobile number on file.'); return; }
+    if (!patient?.phone) { toast.error('This patient has no mobile number on file.'); return; }
     if (!settings.sms_api_key || !settings.sms_sender_id) {
-      alert('SMS is not set up yet. Go to Settings → SMS and enter your gateway API key, Sender ID and DLT template.');
+      toast.error('SMS is not set up yet. Go to Settings → SMS to configure it.');
       return;
     }
     withLog('sms', `91${patient.phone}`, 'sms', async () => {
@@ -372,7 +373,7 @@ export function ReportPreviewPage() {
         message: buildSmsMessage({ name: patientName, testNo: patient.test_no }),
         vars: [patientName, String(patient.test_no)],
       });
-      alert('SMS sent.');
+      toast.success('SMS sent.');
     });
   }
 
@@ -399,21 +400,21 @@ export function ReportPreviewPage() {
   }
 
   function handleEmail() {
-    if (!patient?.email) { alert('This patient has no email address on file.'); return; }
+    if (!patient?.email) { toast.error('This patient has no email address on file.'); return; }
     if (!settings.smtp_host || !settings.smtp_user || !settings.smtp_pass) {
-      alert('Email is not set up yet. Go to Settings → Email and enter the lab Gmail address + app password.');
+      toast.error('Email is not set up yet. Go to Settings → Email to configure it.');
       return;
     }
     withLog('email', patient.email, 'email', async () => {
       await emailCore();
-      alert('Email sent successfully.');
+      toast.success('Email sent.');
     });
   }
 
   async function handleApprove() {
     if (!sessionUser || approving) return;
     if (gatingOrders.length === 0) {
-      alert('There are no results to approve. Enter at least one test result first.');
+      toast.error('There are no results to approve. Enter at least one test result first.');
       return;
     }
     setApproving(true);
@@ -427,8 +428,9 @@ export function ReportPreviewPage() {
         qc.invalidateQueries({ queryKey: ['patients-search'] }),
         qc.invalidateQueries({ queryKey: ['pending-deliveries'] }),
       ]);
+      toast.success('Report approved — you can now print or send it.');
     } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
+      toast.error(e);
     } finally {
       setApproving(false);
     }

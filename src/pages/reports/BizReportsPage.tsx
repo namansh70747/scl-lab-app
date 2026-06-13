@@ -4,6 +4,7 @@ import { Download, FileBarChart2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { invoke, isTauri } from "@/lib/tauri";
+import { toast } from "@/lib/toast";
 import {
   dayBook,
   monthly,
@@ -32,7 +33,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 async function downloadCSV(filename: string, rows: Record<string, unknown>[]) {
   const csv = toCSV(rows);
-  if (rows.length === 0) { alert("Nothing to export for this selection."); return; }
+  if (rows.length === 0) { toast.error("Nothing to export for this selection."); return; }
   if (!isTauri()) {
     // browser fallback: anchor download
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -49,9 +50,9 @@ async function downloadCSV(filename: string, rows: Record<string, unknown>[]) {
     const outPath = await join(await documentDir(), "SCL Reports", "exports", filename);
     await invoke<string>("save_text_file", { content: csv, outPath });
     await invoke("reveal_in_folder", { path: outPath });
-    alert(`Exported to:\n${outPath}`);
+    toast.success("Exported — opening the folder.");
   } catch (e) {
-    alert(`Could not export CSV: ${String(e)}`);
+    toast.error(`Could not export CSV: ${String(e)}`);
   }
 }
 
