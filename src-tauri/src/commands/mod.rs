@@ -370,6 +370,89 @@ pub fn serial_read(port: String, baud: u32, window_ms: u64) -> Result<String, St
     Ok(String::from_utf8_lossy(&acc).into_owned())
 }
 
+/// Read CBC results from the analyzer over the network (TCP/IP).
+///
+/// `mode = "listen"`: this PC acts as the host server — it binds `port` and waits for the
+/// ERBA H360 to connect and push its result (the usual ERBA "Host Communication" setup,
+/// where the analyzer is configured with this PC's IP + port).
+/// `mode = "connect"`: this PC connects out to the analyzer at `host:port` and reads.
+///
+/// Returns the raw text; the frontend parses it (ASTM) and the technician confirms the
+/// values before they are applied — nothing is auto-saved.
+#[tauri::command]
+pub fn tcp_capture(mode: String, host: String, port: u16, window_ms: u64) -> Result<String, String> {
+    use std::io::Read;
+    use std::net::{TcpListener, TcpStream, ToSocketAddrs};
+    use std::time::{Duration, Instant};
+
+    let window = Duration::from_millis(window_ms.clamp(1000, 60_000));
+    let start = Instant::now();
+
+    // Obtain a connected stream, honouring the overall window.
+    let mut stream: TcpStream = if mode == "connect" {
+        let addr = format!("{host}:{port}");
+        let sock = addr
+            .to_socket_addrs()
+            .ok()
+            .and_then(|mut it| it.next())
+            .ok_or_else(|| format!("Invalid analyzer address '{addr}'"))?;
+        TcpStream::connect_timeout(&sock, Duration::from_secs(5))
+            .map_err(|e| format!("Could not connect to analyzer at {addr}: {e}"))?
+    } else {
+        let listener = TcpListener::bind(("0.0.0.0", port))
+            .map_err(|e| format!("Could not listen on port {port}: {e}. Is another program using it?"))?;
+        listener
+            .set_nonblocking(true)
+            .map_err(|e| format!("Socket setup failed: {e}"))?;
+        loop {
+            match listener.accept() {
+                Ok((s, _addr)) => break s,
+                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    if start.elapsed() >= window {
+                        return Err("No connection from the analyzer. On the H360, set Host Communication to this PC's IP and the same port, then re-transmit the result.".into());
+                    }
+                    std::thread::sleep(Duration::from_millis(150));
+                }
+                Err(e) => return Err(format!("Network accept error: {e}")),
+            }
+        }
+    };
+
+    stream
+        .set_read_timeout(Some(Duration::from_millis(500)))
+        .map_err(|e| format!("Socket setup failed: {e}"))?;
+
+    let mut acc: Vec<u8> = Vec::new();
+    let mut buf = [0u8; 8192];
+    let mut idle_after_data = 0u32;
+    while start.elapsed() < window {
+        match stream.read(&mut buf) {
+            Ok(0) => break, // peer closed — transmission complete
+            Ok(n) => {
+                acc.extend_from_slice(&buf[..n]);
+                idle_after_data = 0;
+            }
+            Err(ref e)
+                if e.kind() == std::io::ErrorKind::WouldBlock
+                    || e.kind() == std::io::ErrorKind::TimedOut =>
+            {
+                if !acc.is_empty() {
+                    idle_after_data += 1;
+                    if idle_after_data >= 4 {
+                        break;
+                    }
+                }
+            }
+            Err(e) => return Err(format!("Network read error: {e}")),
+        }
+    }
+
+    if acc.is_empty() {
+        return Err("Connected, but the analyzer sent no data. Re-transmit the result from the H360.".into());
+    }
+    Ok(String::from_utf8_lossy(&acc).into_owned())
+}
+
 /// Return the app's package version.
 #[tauri::command]
 pub fn app_version() -> String {

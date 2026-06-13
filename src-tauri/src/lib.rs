@@ -35,6 +35,12 @@ pub fn run() {
             sql: include_str!("../migrations/0005_analyzer.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 6,
+            description: "cbc_analyzer_network",
+            sql: include_str!("../migrations/0006_analyzer_network.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -55,6 +61,7 @@ pub fn run() {
             commands::send_sms,
             commands::serial_list_ports,
             commands::serial_read,
+            commands::tcp_capture,
             commands::app_version,
         ])
         .run(tauri::generate_context!())
