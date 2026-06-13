@@ -9,7 +9,7 @@ import { useSession } from "@/lib/session";
 import { Test, AgeUnit, Sex, PaymentMode } from "@/types";
 import { nowISO } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Search, X, Plus, Save, CheckCircle2, ArrowRight, Zap } from "lucide-react";
+import { Search, X, Plus, Save, Zap } from "lucide-react";
 
 interface SelectedTest {
   test: Test;
@@ -102,7 +102,6 @@ export function NewPatientPage() {
   // Errors + flow
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<number | null>(null);
   const submitting = useRef(false);   // synchronous double-submit guard (setSaving is async)
   const nameRef = useRef<HTMLInputElement>(null);
   const sexTouched = useRef(false);
@@ -190,20 +189,11 @@ export function NewPatientPage() {
     return Object.keys(e).length === 0;
   }
 
-  function resetForm() {
-    setTitle("Mr."); setName(""); setAge(""); setAgeUnit("YRS"); setSex("MALE");
-    setPhone(""); setEmail(""); setAddress(""); setDoctorId(null);
-    setConcession(0); setSelectedTests([]); setTestQuery(""); setErrors({});
-    sexTouched.current = false;
-    setTimeout(() => nameRef.current?.focus(), 30);
-  }
-
-  async function handleSave(mode2: "new" | "results" | "close") {
+  async function handleSave(mode2: "results" | "close") {
     if (submitting.current) return;   // block a second trigger in the same tick (duplicate patient)
     if (!validate()) return;
     submitting.current = true;
     setSaving(true);
-    const savedNo = testNo;
     try {
       const prices: Record<number, number> = {};
       for (const st of selectedTests) prices[st.test.id] = st.price;
@@ -223,8 +213,7 @@ export function NewPatientPage() {
       qc.invalidateQueries({ queryKey: ['frequent-tests'] });
 
       if (mode2 === "results") navigate(`/result-entry/${patientId}`);
-      else if (mode2 === "close") navigate('/dashboard');
-      else { setLastSaved(savedNo); resetForm(); }   // rapid loop: ready for the next patient
+      else navigate('/dashboard');
     } catch (err) {
       setErrors({ _: String(err) });
     } finally {
@@ -233,10 +222,10 @@ export function NewPatientPage() {
     }
   }
 
-  // Ctrl/⌘+Enter from anywhere = Save & New (the rapid registration loop).
+  // Ctrl/⌘+Enter from anywhere = Save & Enter Results (the basic forward flow).
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); handleSave('new'); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); handleSave('results'); }
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
@@ -269,22 +258,14 @@ export function NewPatientPage() {
             <span className="mx-1.5 text-[#cdced8]">·</span>
             {todayStr}
           </p>
-          {lastSaved != null && (
-            <span className="flex items-center gap-1.5 chip chip-green animate-scale-in">
-              <CheckCircle2 size={13} /> Saved #{lastSaved}
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => handleSave("close")} disabled={saving} className="btn btn-ghost text-[13px]">
+          <button onClick={() => handleSave("close")} disabled={saving} className="btn btn-secondary text-[13px]">
             Save &amp; Close
           </button>
-          <button onClick={() => handleSave("results")} disabled={saving} className="btn btn-secondary text-[13px]">
-            <ArrowRight size={15} strokeWidth={1.8} /> Save &amp; Results
-          </button>
-          <button onClick={() => handleSave("new")} disabled={saving} className="btn btn-accent">
+          <button onClick={() => handleSave("results")} disabled={saving} className="btn btn-accent">
             <Save size={15} strokeWidth={1.9} />
-            {saving ? 'Saving…' : 'Save & New'}
+            {saving ? 'Saving…' : 'Save & Enter Results'}
             <kbd className="text-[10px] font-semibold bg-white/20 rounded px-1.5 py-0.5">⌘⏎</kbd>
           </button>
         </div>
