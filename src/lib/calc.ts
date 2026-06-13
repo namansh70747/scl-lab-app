@@ -79,6 +79,31 @@ export function computeCalculated(code: string, formula: string, values: ResultM
   }
 }
 
+/**
+ * Fold all calculated values back into the value map so formulas that depend on
+ * other calculated values resolve instead of staying blank. Example chains:
+ *   GLO = TPN − ALB  →  A/G ratio = ALB / GLO   (BAG depends on GLO)
+ *   LDL = Friedewald →  LDL/HDL ratio = LDL / HDL (BLHR depends on BLDL)
+ * Without this, the dependent ratio is always blank because only *entered* values
+ * are seeded into the map. Iterates to a fixed point (bounded by the test count).
+ */
+export function resolveCalculated(
+  base: ResultMap,
+  calculated: { code: string; formula: string | null }[]
+): ResultMap {
+  const values: ResultMap = { ...base };
+  for (let pass = 0; pass <= calculated.length; pass++) {
+    let changed = false;
+    for (const t of calculated) {
+      if (values[t.code] != null) continue;          // already known (entered or computed)
+      const v = computeCalculated(t.code, t.formula ?? '', values);
+      if (v != null) { values[t.code] = v; changed = true; }
+    }
+    if (!changed) break;
+  }
+  return values;
+}
+
 export function computeGFR(creatinine: number, ageYears: number, sex: 'MALE' | 'FEMALE'): number | null {
   if (creatinine <= 0 || ageYears <= 0) return null;
   // CKD-EPI 2021
