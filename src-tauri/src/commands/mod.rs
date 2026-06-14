@@ -451,6 +451,65 @@ pub fn local_ips() -> Vec<String> {
     ips
 }
 
+/// A stable per-machine identifier used to lock an activation key to specific PCs.
+/// Returns a raw OS machine id; the frontend hashes it into a short device fingerprint.
+/// Stable across app reinstalls and reboots (it's the OS install's own id), so a key bound
+/// to it keeps working — but a different computer yields a different id and is refused.
+#[tauri::command]
+pub fn device_id() -> String {
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        if let Ok(out) = Command::new("reg")
+            .args([
+                "query",
+                r"HKLM\SOFTWARE\Microsoft\Cryptography",
+                "/v",
+                "MachineGuid",
+            ])
+            .output()
+        {
+            let s = String::from_utf8_lossy(&out.stdout);
+            if let Some(line) = s.lines().find(|l| l.contains("MachineGuid")) {
+                if let Some(guid) = line.split_whitespace().last() {
+                    if guid.len() >= 8 {
+                        return format!("win:{guid}");
+                    }
+                }
+            }
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        if let Ok(out) = Command::new("ioreg")
+            .args(["-rd1", "-c", "IOPlatformExpertDevice"])
+            .output()
+        {
+            let s = String::from_utf8_lossy(&out.stdout);
+            if let Some(line) = s.lines().find(|l| l.contains("IOPlatformUUID")) {
+                let parts: Vec<&str> = line.split('"').collect();
+                if parts.len() >= 4 && parts[3].len() >= 8 {
+                    return format!("mac:{}", parts[3]);
+                }
+            }
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(id) = std::fs::read_to_string("/etc/machine-id") {
+            let id = id.trim();
+            if !id.is_empty() {
+                return format!("lin:{id}");
+            }
+        }
+    }
+    // Fallback: machine hostname (stable enough; better than a constant).
+    std::env::var("COMPUTERNAME")
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .unwrap_or_else(|_| "unknown-device".to_string())
+}
+
 /// Read CBC results from the analyzer over the network (TCP/IP).
 ///
 /// `mode = "listen"`: this PC acts as the host server — it binds `port` and waits for the

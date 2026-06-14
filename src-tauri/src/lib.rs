@@ -106,6 +106,7 @@ pub fn run() {
             commands::serial_read,
             commands::tcp_capture,
             commands::local_ips,
+            commands::device_id,
             commands::whatsapp_send_document,
             commands::copy_file_to_clipboard,
             commands::save_text_file,
