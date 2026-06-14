@@ -1,4 +1,5 @@
 import { dbQuery, dbExecute } from "@/lib/db";
+import { invoke, isTauri } from "@/lib/tauri";
 
 /**
  * Offline licensing for NamAsta Diagnostics.
@@ -18,6 +19,7 @@ export interface LicenseInfo {
   plan: string;
   iat: number;
   exp: number; // unix seconds
+  dev?: string[]; // device fingerprints this key is locked to (max 2). Absent = any device.
 }
 
 export interface LicenseStatus {
@@ -28,6 +30,25 @@ export interface LicenseStatus {
   exp?: number;       // unix seconds
   daysLeft?: number;  // whole days remaining on an active licence
   expired?: boolean;
+  deviceMismatch?: boolean;  // key is valid + in-tenure, but locked to other devices
+  deviceId?: string;         // this PC's fingerprint (so the UI can show/send it)
+}
+
+/**
+ * A short, stable fingerprint of THIS computer. Derived from the OS machine id (hashed, so the
+ * raw id is never exposed) and used to lock an activation key to specific PCs — at most 2.
+ * Cached for the session. In a plain browser (no Tauri) there's no machine id, so it's a
+ * constant dev value (the licence gate is bypassed in dev anyway).
+ */
+let _fingerprint: string | null = null;
+export async function getDeviceFingerprint(): Promise<string> {
+  if (_fingerprint) return _fingerprint;
+  let raw = "web-dev";
+  try { if (isTauri()) raw = await invoke<string>("device_id"); } catch { /* fall back */ }
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+  const hex = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
+  _fingerprint = hex.slice(0, 12).toUpperCase();   // 12 readable hex chars, e.g. "A3F90C12B4D7"
+  return _fingerprint;
 }
 
 function bytesFromB64(s: string, urlSafe: boolean): Uint8Array {
@@ -69,6 +90,8 @@ export async function verifyLicenseKey(key: string): Promise<LicenseInfo | null>
     if (!ok) return null;
     const info = JSON.parse(new TextDecoder().decode(bytesFromB64(payloadB64, true))) as LicenseInfo;
     if (!info?.lab || !info?.exp) return null;
+    // Normalise the device-lock list (tolerate a key minted without it = unbound).
+    info.dev = Array.isArray(info.dev) ? info.dev.filter(d => typeof d === "string") : undefined;
     return info;
   } catch {
     return null;
@@ -109,6 +132,16 @@ export async function activateLicense(key: string): Promise<LicenseInfo> {
   const info = await verifyLicenseKey(cleaned);
   if (!info) throw new Error("This activation key is not valid. Please re-check it (or contact NamAsta).");
   if (info.exp * 1000 < await effectiveNow()) throw new Error("This activation key has already expired.");
+  // Device lock: a key bound to specific PCs (max 2) only activates on one of them. The list is
+  // inside the signature, so it can't be edited — a 3rd computer simply cannot use this key.
+  if (info.dev && info.dev.length) {
+    const fp = await getDeviceFingerprint();
+    if (!info.dev.includes(fp)) {
+      throw new Error(
+        `This key is registered to other device(s). This PC's Device ID is ${fp} — send it to NamAsta to add this computer (each key allows up to 2).`
+      );
+    }
+  }
   await dbExecute(
     `INSERT INTO settings(key,value,updated_at) VALUES('license_key',?,CURRENT_TIMESTAMP)
      ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP`,
@@ -128,6 +161,15 @@ export async function getLicenseStatus(): Promise<LicenseStatus> {
     const now = await effectiveNow();
     if (info.exp * 1000 < now) {
       return { active: false, expired: true, lab: info.lab, plan: info.plan, exp: info.exp };
+    }
+    // Device lock re-checked on every launch: a stored key that's bound to other PCs must NOT
+    // unlock this one (e.g. the scl.db was copied to a third computer). Fail to the activation
+    // screen with this PC's id so it can be registered.
+    if (info.dev && info.dev.length) {
+      const fp = await getDeviceFingerprint();
+      if (!info.dev.includes(fp)) {
+        return { active: false, deviceMismatch: true, deviceId: fp, lab: info.lab, plan: info.plan, exp: info.exp };
+      }
     }
     const daysLeft = Math.ceil((info.exp * 1000 - now) / 86_400_000);
     return { active: true, lab: info.lab, plan: info.plan, exp: info.exp, daysLeft };
