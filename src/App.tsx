@@ -5,8 +5,9 @@ import { AppShell } from "@/app/AppShell";
 import { DialogHost } from "@/lib/dialog";
 import { ToastHost } from "@/lib/toast";
 import { getLicenseStatus, type LicenseStatus } from "@/lib/license";
-import { needsSetup } from "@/lib/onboarding";
+import { needsSetup, resetInstallForTesting } from "@/lib/onboarding";
 import { NamAstaMark } from "@/components/common/NamAstaLogo";
+import { useNavigate as useNav } from "react-router-dom";
 
 // Catches a failed lazy-chunk load (e.g. after an update swaps chunk hashes) so the app
 // shows a recoverable message instead of a blank white screen.
@@ -153,9 +154,62 @@ function LicenseGate() {
             <Route path="settings" element={<RequireAdmin><SettingsPage /></RequireAdmin>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
+          {/* Dev-only reset route — compiled out in production by Vite (DEV=false constant). */}
+          {import.meta.env.DEV && <Route path="/dev/reset" element={<DevResetPage />} />}
         </Routes>
       </Suspense>
     </ChunkErrorBoundary>
+  );
+}
+
+/**
+ * Dev-only testing page at /dev/reset.
+ * Resets the install to genuine first-run so the full new-customer flow
+ * (pay → key → setup form → dashboard) can be walked through again.
+ * This route is ONLY compiled in when import.meta.env.DEV is true —
+ * Vite replaces it with `false` in production builds and the dead code
+ * is removed entirely, so customers can never reach this page.
+ */
+function DevResetPage() {
+  const navigate = useNav();
+  const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function reset() {
+    setBusy(true);
+    await resetInstallForTesting();
+    localStorage.removeItem("namasta_show_onboard");
+    useSession.getState().logout();
+    setDone(true);
+    setBusy(false);
+  }
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0c1a3e", fontFamily: "Inter, sans-serif" }}>
+      <div style={{ background: "#ffffff10", border: "1px solid #ffffff20", borderRadius: 20, padding: 40, maxWidth: 420, width: "100%", textAlign: "center" }}>
+        <p style={{ color: "#f59e0b", fontSize: 12, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 12 }}>Dev only — never shown in production</p>
+        <h1 style={{ color: "#ffffff", fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Reset to first-run</h1>
+        <p style={{ color: "#ffffff80", fontSize: 13, lineHeight: 1.6, marginBottom: 28 }}>
+          Clears <code style={{ color: "#a5f3fc" }}>setup_done</code>, <code style={{ color: "#a5f3fc" }}>license_key</code> and resets the admin to the seeded placeholder.
+          After reset the full new-customer flow runs: pay → key → setup form → dashboard.
+        </p>
+        {done ? (
+          <div>
+            <p style={{ color: "#4ade80", fontWeight: 600, marginBottom: 16 }}>✓ Reset complete</p>
+            <button onClick={() => { window.location.href = "/"; }} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+              Go to app →
+            </button>
+          </div>
+        ) : (
+          <button onClick={reset} disabled={busy} style={{ background: busy ? "#6366f180" : "#ef4444", color: "#fff", border: "none", borderRadius: 10, padding: "12px 28px", fontWeight: 700, cursor: busy ? "default" : "pointer", fontSize: 15 }}>
+            {busy ? "Resetting…" : "Reset install"}
+          </button>
+        )}
+        <p style={{ marginTop: 20 }}>
+          <button onClick={() => navigate(-1)} style={{ background: "none", border: "none", color: "#ffffff50", cursor: "pointer", fontSize: 13 }}>← go back</button>
+        </p>
+      </div>
+    </div>
   );
 }
 
