@@ -64,6 +64,7 @@ export function LoginPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;   // ignore a second submit while the first is in flight
     setError(""); setLoading(true);
     try {
       const res = await login(username.trim(), password);
@@ -85,6 +86,7 @@ export function LoginPage() {
 
   async function handleSetPassword(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError("");
     if (newPw.length < 4) { setError("Password must be at least 4 characters."); return; }
     if (newPw !== confirmPw) { setError("Passwords do not match."); return; }
