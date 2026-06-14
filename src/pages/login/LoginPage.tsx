@@ -10,7 +10,7 @@ import {
   Eye, EyeOff, Lock, ShieldCheck, Zap, Database, Loader2,
   ArrowRight, AlertCircle, CheckCircle2, UserRound, Building2,
 } from "lucide-react";
-import { NamAstaMark } from "@/components/common/NamAstaLogo";
+import { NamAstaMark, NamAstaWordmark } from "@/components/common/NamAstaLogo";
 import { getAllSettings } from "@/lib/queries/settings";
 
 export function LoginPage() {
@@ -114,12 +114,8 @@ export function LoginPage() {
 
       {/* ── Brand hero (left) ── */}
       <aside className="relative hidden lg:flex flex-col justify-between p-14">
-        <div className="relative flex items-center gap-3.5">
-          <NamAstaMark size={52} animated />
-          <div className="leading-tight">
-            <p className="font-bold tracking-wide text-white/95">NamAsta Diagnostics</p>
-            <p className="text-[11px] text-white/40 tracking-[0.18em] uppercase">Laboratory Management Suite</p>
-          </div>
+        <div className="relative">
+          <NamAstaWordmark size={48} light />
         </div>
 
         <div className="relative max-w-md">
@@ -150,8 +146,7 @@ export function LoginPage() {
         <div className="w-full max-w-sm rounded-3xl border border-white/10 glass-dark p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] animate-pop-in">
           {/* mobile logo */}
           <div className="lg:hidden flex flex-col items-center mb-7">
-            <NamAstaMark size={52} animated />
-            <h1 className="mt-3 text-lg font-bold text-white">NamAsta Diagnostics</h1>
+            <NamAstaWordmark size={48} light />
           </div>
 
           {!pendingUser ? (

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { CommandPalette } from "@/app/CommandPalette";
 import { KeyboardShortcuts } from "@/app/KeyboardShortcuts";
 import { maybeDailyBackup } from "@/lib/backup";
-import { NamAstaMark } from "@/components/common/NamAstaLogo";
+import { NamAstaMark, NamAstaWordmark } from "@/components/common/NamAstaLogo";
 import { getUserById } from "@/lib/queries/auth";
 import { getLicenseStatus, type LicenseStatus } from "@/lib/license";
 
@@ -82,13 +82,10 @@ export function AppShell() {
 
         {/* brand */}
         <div className={cn("relative flex items-center gap-3 h-[64px] px-4", collapsed && "justify-center px-0")}>
-          <NamAstaMark size={collapsed ? 34 : 38} />
-          {!collapsed && (
-            <div className="min-w-0 leading-tight">
-              <p className="text-[13.5px] font-bold text-white/95 truncate tracking-wide">NamAsta</p>
-              <p className="text-[10px] text-white/40 font-semibold tracking-[0.2em] uppercase">Diagnostics</p>
-            </div>
-          )}
+          {collapsed
+            ? <NamAstaMark size={34} />
+            : <NamAstaWordmark size={34} light />
+          }
         </div>
 
         <div className="relative mx-4 h-px bg-white/[0.07]" />
