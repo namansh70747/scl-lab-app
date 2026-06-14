@@ -188,7 +188,8 @@ export function LoginPage() {
                   <div className="relative">
                     <input
                       type={showPw ? "text" : "password"} value={password}
-                      onChange={e => setPassword(e.target.value)} placeholder="Enter your password"
+                      onChange={e => { setPassword(e.target.value); setError(""); }}
+                      placeholder="Enter your password"
                       className="login-input pr-11" />
                     <ToggleEye shown={showPw} onClick={() => setShowPw(v => !v)} />
                   </div>
@@ -203,20 +204,31 @@ export function LoginPage() {
                 </button>
               </form>
 
-              {/* New-lab entry — plain language, clearly visible. */}
-              <div className="mt-6 pt-5 border-t border-white/10">
-                <p className="text-[13px] text-white/55 mb-2.5">First time here? Don't have a lab account yet?</p>
-                <button
-                  type="button"
-                  onClick={() => { localStorage.setItem('namasta_show_onboard', '1'); window.location.reload(); }}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#818cf8]/40 bg-[#6366f1]/10 px-4 py-3 text-[14px] font-semibold text-[#c7cbff] hover:bg-[#6366f1]/20 transition-colors"
-                >
-                  <Building2 size={17} /> Register your laboratory
-                </button>
-              </div>
+              {/* Only show registration CTA if this is a fresh install (setup not done yet).
+                  A logged-out lab should never see this — it would let them accidentally
+                  wipe their own identity and doctor list. */}
+              {settings.setup_done !== '1' && (
+                <div className="mt-6 pt-5 border-t border-white/10">
+                  <p className="text-[13px] text-white/55 mb-2.5">First time here? Don't have a lab account yet?</p>
+                  <button
+                    type="button"
+                    onClick={() => { localStorage.setItem('namasta_show_onboard', '1'); window.location.reload(); }}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#818cf8]/40 bg-[#6366f1]/10 px-4 py-3 text-[14px] font-semibold text-[#c7cbff] hover:bg-[#6366f1]/20 transition-colors"
+                  >
+                    <Building2 size={17} /> Register your laboratory
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <>
+              <button
+                type="button"
+                onClick={() => { setPendingUser(null); setError(""); setNewPw(""); setConfirmPw(""); }}
+                className="flex items-center gap-1.5 text-[12px] text-white/40 hover:text-white/70 transition-colors mb-4 -mt-1"
+              >
+                <ArrowRight size={13} className="rotate-180" /> Back to sign in
+              </button>
               <div className="flex items-center gap-2 text-[#c7cbff] mb-1">
                 <Lock size={18} /> <span className="text-sm font-semibold uppercase tracking-wide">Secure your account</span>
               </div>
