@@ -221,8 +221,12 @@ pub fn backup_now(
 
 /// Remove `scl-backup-*.db` files older than `retention_days` days in `dir`.
 fn prune_old_backups(dir: &Path, retention_days: u64) -> std::io::Result<()> {
+    // Cap the retention window (and use checked math) so a corrupted/huge setting can never
+    // overflow the seconds multiplication and panic. 36500 days = 100 years is plenty.
+    let days = retention_days.min(36_500);
+    let secs = days.saturating_mul(24 * 60 * 60);
     let cutoff = std::time::SystemTime::now()
-        .checked_sub(std::time::Duration::from_secs(retention_days * 24 * 60 * 60))
+        .checked_sub(std::time::Duration::from_secs(secs))
         .unwrap_or(std::time::UNIX_EPOCH);
 
     for entry in std::fs::read_dir(dir)? {
