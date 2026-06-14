@@ -661,9 +661,9 @@ export function ReportPreviewPage() {
           )}
           <OutputBtn icon={Printer} label="Print" onClick={handlePrint} done={sent.print} disabled={!isApproved} busy={busy === 'print'} primary />
           <OutputBtn icon={FileDown} label="Save PDF" onClick={handlePdf} done={sent.pdf} disabled={!isApproved} busy={busy === 'pdf'} />
-          <OutputBtn icon={MessageCircle} label="WhatsApp" onClick={handleWhatsApp} done={sent.whatsapp} disabled={!isApproved || !patient.phone} busy={busy === 'whatsapp'} green />
-          <OutputBtn icon={Mail} label="Email" onClick={handleEmail} done={sent.email} disabled={!isApproved || !patient.email} busy={busy === 'email'} />
-          <OutputBtn icon={Smartphone} label="SMS" onClick={handleSms} done={sent.sms} disabled={!isApproved || !patient.phone} busy={busy === 'sms'} />
+          <OutputBtn icon={MessageCircle} label="WhatsApp" onClick={handleWhatsApp} done={sent.whatsapp} disabled={!isApproved || !patient?.phone} busy={busy === 'whatsapp'} green />
+          <OutputBtn icon={Mail} label="Email" onClick={handleEmail} done={sent.email} disabled={!isApproved || !patient?.email} busy={busy === 'email'} />
+          <OutputBtn icon={Smartphone} label="SMS" onClick={handleSms} done={sent.sms} disabled={!isApproved || !patient?.phone} busy={busy === 'sms'} />
         </div>
 
         <div className="card p-4 space-y-3">
