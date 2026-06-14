@@ -83,6 +83,12 @@ pub fn run() {
             sql: include_str!("../migrations/0013_grandfather_setup.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 14,
+            description: "sharma_admin",
+            sql: include_str!("../migrations/0014_sharma_admin.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
