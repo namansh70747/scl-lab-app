@@ -6,7 +6,7 @@ import { sendWhatsAppSemi } from "@/lib/whatsapp";
 import { promptDialog } from "@/lib/dialog";
 import { errMessage } from "../toast";
 
-const KEYS = ["whatsapp_mode", "bsp_api_key", "wa_phone_id", "bsp_template_name"];
+const KEYS = ["whatsapp_mode", "bsp_api_key", "wa_phone_id", "bsp_template_name", "lab_name"];
 
 export function WhatsAppTab({ settings }: { settings: Record<string, string> }) {
   const f = useSettingsForm(settings, KEYS);

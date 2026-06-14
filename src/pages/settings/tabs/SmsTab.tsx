@@ -6,7 +6,7 @@ import { sendSms } from "@/lib/sms";
 import { promptDialog } from "@/lib/dialog";
 import { errMessage } from "../toast";
 
-const KEYS = ["sms_provider", "sms_api_key", "sms_sender_id", "sms_dlt_template_id"];
+const KEYS = ["sms_provider", "sms_api_key", "sms_sender_id", "sms_dlt_template_id", "lab_name"];
 
 export function SmsTab({ settings }: { settings: Record<string, string> }) {
   const f = useSettingsForm(settings, KEYS);
@@ -90,8 +90,7 @@ export function SmsTab({ settings }: { settings: Record<string, string> }) {
 
       <NoteBox>
         The template you register must have two variables in this order: <b>1) patient name</b>, <b>2) test number</b>.
-        Example: <i>“Dear &#123;#var#&#125;, your lab report (Test No &#123;#var#&#125;) from SHARMA CLINICAL
-        LABORATORY, Nangal Bhur is ready. Thank you.”</i>
+        Example: <i>”Dear &#123;#var#&#125;, your lab report (Test No &#123;#var#&#125;) from YOUR LABORATORY NAME is ready. Thank you.”</i>
       </NoteBox>
 
       <div>

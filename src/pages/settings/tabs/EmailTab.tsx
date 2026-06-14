@@ -6,7 +6,7 @@ import { sendEmail } from "@/lib/email";
 import { promptDialog } from "@/lib/dialog";
 import { errMessage } from "../toast";
 
-const KEYS = ["smtp_host", "smtp_port", "smtp_user", "smtp_pass"];
+const KEYS = ["smtp_host", "smtp_port", "smtp_user", "smtp_pass", "lab_name"];
 
 export function EmailTab({ settings }: { settings: Record<string, string> }) {
   const f = useSettingsForm(settings, KEYS);
