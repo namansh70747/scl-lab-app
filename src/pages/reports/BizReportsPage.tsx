@@ -29,8 +29,8 @@ const TABS: { id: Tab; label: string }[] = [
 const today = () => new Date().toISOString().slice(0, 10);
 
 async function downloadCSV(filename: string, rows: Record<string, unknown>[]) {
-  const csv = toCSV(rows);
   if (rows.length === 0) { toast.error("Nothing to export for this selection."); return; }
+  const csv = toCSV(rows);
   if (!isTauri()) {
     // browser fallback: anchor download
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
