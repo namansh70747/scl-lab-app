@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
 import { Check, Loader2, ShieldCheck, KeyRound, Sparkles, Building2, Wallet, Eye, EyeOff, CheckCircle2 } from "lucide-react";
@@ -195,8 +195,13 @@ function SetupStep({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [showPw, setShowPw] = useState(false);
+  // Synchronous double-submit guard — the confirm field's Enter handler bypasses the disabled
+  // button, and the `busy` state updates too late to block a second rapid Enter. Two completeSetup
+  // calls would rename the admin twice and delete the doctor list twice.
+  const submitting = useRef(false);
 
   async function finish() {
+    if (submitting.current) return;   // block a second Enter before the first completes
     setErr("");
     if (!f.labName.trim()) return setErr("Enter your laboratory's name.");
     if (!f.incharge.trim()) return setErr("Enter the lab in-charge / signatory name (it appears on reports).");
@@ -204,18 +209,21 @@ function SetupStep({ onDone }: { onDone: () => void }) {
     if (/\s/.test(f.username.trim())) return setErr("Username can't contain spaces.");
     if (f.pw.length < 4) return setErr("Password must be at least 4 characters.");
     if (f.pw !== f.pw2) return setErr("Passwords do not match.");
+    submitting.current = true;
     setBusy(true);
     try {
       const user = await completeSetup({
         labName: f.labName, address: f.address, phones: f.phones, timings: f.timings,
         inchargeName: f.incharge, inchargeQual: f.qual, username: f.username, password: f.pw,
       });
+      if (!user) throw new Error("Could not create your account. Please try again.");
       setUser(user);
       toast.success(`Welcome, ${f.labName.trim()}!`);
       onDone();
       navigate("/dashboard");
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
+      submitting.current = false;   // allow a retry only on failure (success navigates away)
     } finally {
       setBusy(false);
     }
