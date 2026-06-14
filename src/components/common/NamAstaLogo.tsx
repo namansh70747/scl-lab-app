@@ -1,10 +1,10 @@
 /**
  * NamAsta Diagnostics brand mark.
  *
- * Concept: The letter N whose diagonal IS a medical ECG heartbeat trace — the most
- * universally recognised diagnostic-lab symbol. Deep navy-blue tile (clinical, trustworthy),
- * clean white N strokes, teal pulse spike so the heartbeat reads immediately. The "A" in the
- * wordmark is gold so the brand name pops. Works at 28 px favicon scale up to full-size.
+ * Concept: a laboratory test-tube / sample vial — white glass, bright cyan sample liquid,
+ * and a glowing ECG heartbeat "reading" in the empty upper glass. Reads unmistakably as a
+ * diagnostics lab. Deep clinical navy→teal tile. The "A" in the wordmark is gold so the
+ * brand name pops. Designed to stay legible from 28 px favicon up to full size.
  */
 export function NamAstaMark({
   size = 44,
@@ -28,111 +28,99 @@ export function NamAstaMark({
         overflow: "hidden",
       }}
     >
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 48 48"
-        fill="none"
-        role="img"
-        aria-label="NamAsta Diagnostics"
-      >
+      <svg width={size} height={size} viewBox="0 0 48 48" fill="none" role="img" aria-label="NamAsta Diagnostics">
         <defs>
-          {/* Deep medical navy → teal gradient — clinical, not startup-purple */}
+          {/* Clinical deep navy → teal tile */}
           <linearGradient id={`${u}-bg`} x1="2" y1="2" x2="46" y2="46" gradientUnits="userSpaceOnUse">
             <stop stopColor="#0c1a3e" />
-            <stop offset="0.45" stopColor="#0f2d5c" />
+            <stop offset="0.5" stopColor="#0f2f5e" />
             <stop offset="1" stopColor="#0a3d52" />
           </linearGradient>
 
-          {/* ECG teal gradient for the heartbeat trace */}
-          <linearGradient id={`${u}-ecg`} x1="13" y1="13" x2="35" y2="35" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#67e8f9" />
-            <stop offset="0.5" stopColor="#22d3ee" />
-            <stop offset="1" stopColor="#06b6d4" />
+          {/* Bright sample liquid */}
+          <linearGradient id={`${u}-liquid`} x1="24" y1="24" x2="24" y2="37" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#34d9f0" />
+            <stop offset="1" stopColor="#0891b2" />
           </linearGradient>
 
-          {/* Gloss highlight — top-left quarter */}
-          <radialGradient id={`${u}-gloss`} cx="0.22" cy="0.1" r="0.8">
-            <stop stopColor="#ffffff" stopOpacity="0.45" />
-            <stop offset="0.5" stopColor="#ffffff" stopOpacity="0.06" />
+          {/* Top-left gloss */}
+          <radialGradient id={`${u}-gloss`} cx="0.22" cy="0.1" r="0.85">
+            <stop stopColor="#ffffff" stopOpacity="0.42" />
+            <stop offset="0.5" stopColor="#ffffff" stopOpacity="0.05" />
             <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
           </radialGradient>
 
-          {/* Soft inner depth — bottom rim */}
+          {/* Bottom depth glow */}
           <linearGradient id={`${u}-depth`} x1="24" y1="4" x2="24" y2="46" gradientUnits="userSpaceOnUse">
             <stop stopColor="#38bdf8" stopOpacity="0" />
-            <stop offset="1" stopColor="#0ea5e9" stopOpacity="0.22" />
+            <stop offset="1" stopColor="#0ea5e9" stopOpacity="0.2" />
           </linearGradient>
 
-          {/* Glow filter for the ECG spike */}
-          <filter id={`${u}-glow`} x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="1.5" result="blur" />
-            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          {/* Glow for the ECG trace */}
+          <filter id={`${u}-glow`} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.1" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
+
+          {/* Clip the liquid to the inside of the tube so it never spills past the glass */}
+          <clipPath id={`${u}-tube`}>
+            <path d="M 16.4,12 L 16.4,30 Q 16.4,36.6 24,36.6 Q 31.6,36.6 31.6,30 L 31.6,12 Z" />
+          </clipPath>
         </defs>
 
         {/* ── Tile ── */}
         <rect x="2" y="2" width="44" height="44" rx="13" fill={`url(#${u}-bg)`} />
         <rect x="2" y="2" width="44" height="44" rx="13" fill={`url(#${u}-depth)`} />
         <rect x="2" y="2" width="44" height="44" rx="13" fill={`url(#${u}-gloss)`} />
-        {/* subtle 1 px white rim */}
-        <rect x="2.6" y="2.6" width="42.8" height="42.8" rx="12.5"
-          stroke="#ffffff" strokeOpacity="0.14" strokeWidth="1" />
+        <rect x="2.6" y="2.6" width="42.8" height="42.8" rx="12.5" stroke="#ffffff" strokeOpacity="0.14" strokeWidth="1" />
 
-        {/* ── N monogram ──
-            Two clean white verticals + a diagonal whose midpoint rises into a
-            QRS complex (the canonical ECG spike) — pulse of life in a diagnostic lab.
+        {/* ── Sample liquid (lower ~45% of the tube), clipped to the glass interior ── */}
+        <g clipPath={`url(#${u}-tube)`}>
+          <rect x="15" y="25.5" width="18" height="13" fill={`url(#${u}-liquid)`} />
+          {/* surface shine */}
+          <ellipse cx="24" cy="25.7" rx="7.6" ry="1.5" fill="#bff5ff" opacity="0.55" />
+          {/* bubbles */}
+          <circle cx="20.3" cy="31" r="1.25" fill="#ffffff" opacity="0.4" />
+          <circle cx="27.2" cy="33.2" r="1.6" fill="#ffffff" opacity="0.3" />
+          <circle cx="23.4" cy="34.4" r="0.9" fill="#ffffff" opacity="0.35" />
+        </g>
 
-            Path breakdown:
-              • (13,34) → (13,13)          left vertical
-              • (13,13) → (20,21.5)        normal diagonal start
-              • (20,21.5) → (21.5,14)      QRS upstroke  (sharp rise)
-              • (21.5,14) → (24.5,28)      QRS downstroke (sharp fall, below baseline)
-              • (24.5,28) → (35,34)        recovery to end of diagonal
-              The S-wave dip below the diagonal baseline is what makes this read
-              unmistakably as an ECG trace rather than a mere kink.
-        */}
-
-        {/* Left vertical */}
+        {/* ── Glass tube outline (open top, rounded bottom) ── */}
         <path
-          d="M 13,34 L 13,13"
+          d="M 15,12 L 15,30 Q 15,38 24,38 Q 33,38 33,30 L 33,12"
           stroke="#ffffff"
-          strokeWidth="4.6"
-          strokeLinecap="round"
-        />
-        {/* Right vertical */}
-        <path
-          d="M 35,34 L 35,13"
-          stroke="#ffffff"
-          strokeWidth="4.6"
-          strokeLinecap="round"
-        />
-
-        {/* ECG diagonal — shadow layer for depth */}
-        <path
-          d="M 13,13 L 20,21.5 L 21.5,14 L 24.5,28 L 35,34"
-          stroke="#000000"
-          strokeOpacity="0.3"
-          strokeWidth="7"
+          strokeWidth="2.4"
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"
         />
+        {/* mouth rim */}
+        <ellipse cx="24" cy="12" rx="9" ry="2.2" stroke="#ffffff" strokeWidth="2.1" fill="none" />
 
-        {/* ECG diagonal — teal glowing trace */}
+        {/* ── ECG heartbeat reading in the empty upper glass ── */}
+        {/* shadow for depth */}
         <path
-          d="M 13,13 L 20,21.5 L 21.5,14 L 24.5,28 L 35,34"
-          stroke={`url(#${u}-ecg)`}
-          strokeWidth="4"
+          d="M 16,19 L 19,19 L 20.8,13.5 L 23,23 L 24.8,19 L 32,19"
+          stroke="#000000"
+          strokeOpacity="0.28"
+          strokeWidth="3.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+        {/* glowing trace */}
+        <path
+          d="M 16,19 L 19,19 L 20.8,13.5 L 23,23 L 24.8,19 L 32,19"
+          stroke="#7df0ff"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"
           filter={`url(#${u}-glow)`}
         />
-
-        {/* Bright white dot at the QRS peak — the "live signal" indicator */}
-        <circle cx="21.5" cy="14" r="2.4" fill="#ffffff" />
-        <circle cx="21.5" cy="14" r="1.3" fill="#a5f3fc" />
+        {/* peak node */}
+        <circle cx="20.8" cy="13.5" r="1.7" fill="#ffffff" />
+        <circle cx="20.8" cy="13.5" r="0.9" fill="#22d3ee" />
       </svg>
 
       {/* Sheen sweep (animated only) */}
@@ -144,8 +132,7 @@ export function NamAstaMark({
             top: 0,
             bottom: 0,
             width: "55%",
-            background:
-              "linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent)",
+            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent)",
             animation: "logo-sheen 4.5s ease-in-out infinite",
           }}
         />
@@ -165,10 +152,7 @@ export function NamAstaWordmark({
   className?: string;
 }) {
   return (
-    <span
-      className={className}
-      style={{ display: "inline-flex", alignItems: "center", gap: 11 }}
-    >
+    <span className={className} style={{ display: "inline-flex", alignItems: "center", gap: 11 }}>
       <NamAstaMark size={size} animated={light} />
       <span style={{ lineHeight: 1.05 }}>
         <span
