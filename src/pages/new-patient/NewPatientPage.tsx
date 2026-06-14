@@ -229,14 +229,17 @@ export function NewPatientPage() {
     }
   }
 
-  // Ctrl/⌘+Enter from anywhere = Save & Enter Results (the basic forward flow).
+  // Keep a ref so the global keydown listener always calls the latest handleSave without
+  // re-registering on every render (which is what the no-dep-array pattern does).
+  const handleSaveRef = useRef(handleSave);
+  useEffect(() => { handleSaveRef.current = handleSave; });
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); handleSave('results'); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); handleSaveRef.current('results'); }
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-  });
+  }, []);
 
   const quickPanels = ['CBC', 'LFT', 'KFT', 'LIPID', 'DIAB', 'URINE', 'THY', 'SERO'];
 
