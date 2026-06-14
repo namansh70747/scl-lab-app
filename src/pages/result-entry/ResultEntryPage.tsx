@@ -184,16 +184,22 @@ export function ResultEntryPage() {
     onError: (e) => { if (String(e).includes('cancelled')) return; toast.error(e); },
   });
 
-  // F9 = approve (only when not already approved, and not while another dialog is open)
+  // F9 = approve. Keep a ref so the single global listener always reads latest state without
+  // re-registering on every render (re-registering every render adds/removes a listener on
+  // every keystroke, every saved value, every order refetch — hundreds of times per session).
+  // allHaveValues is declared below (after orders/localValues), so initialise the ref safe
+  // and update it synchronously after every render via a separate effect.
+  const f9StateRef = useRef({ isApproved, showAddTest, analyzer, showApprove, allHaveValues: false });
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.key === 'F9' && !isApproved && allHaveValues && !showAddTest && !analyzer && !showApprove) {
+      const s = f9StateRef.current;
+      if (e.key === 'F9' && !s.isApproved && s.allHaveValues && !s.showAddTest && !s.analyzer && !s.showApprove) {
         e.preventDefault(); setShowApprove(true);
       }
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-  });
+  }, []);
 
   // Esc closes the approve dialog (per DESIGN.md dialog spec)
   useEffect(() => {
@@ -271,6 +277,7 @@ export function ResultEntryPage() {
         qc.invalidateQueries({ queryKey: ['today-patients'] }),
         qc.invalidateQueries({ queryKey: ['patients-search'] }),
         qc.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+        qc.invalidateQueries({ queryKey: ['pending-deliveries'] }),
       ]);
       setShowAddTest(false); setAddQuery(''); setAddResults([]);
       toast.success('Test added.');
@@ -313,6 +320,9 @@ export function ResultEntryPage() {
     if (o.test.result_type === 'calculated') return true;
     return (localValues[o.order.id] ?? '').trim() !== '';
   });
+
+  // Keep the F9 ref in sync — runs after every render so the listener always reads fresh values.
+  f9StateRef.current = { isApproved, showAddTest, analyzer, showApprove, allHaveValues };
 
   const progress = activeOrders.filter(o => localValues[o.order.id] || o.test.result_type === 'calculated').length;
   const total = activeOrders.length;
