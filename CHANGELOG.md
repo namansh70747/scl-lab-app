@@ -2,6 +2,13 @@
 
 All notable changes to NamAsta Diagnostics. Newest first.
 
+## v1.3.95
+
+- **Forgot password recovery with activation key.** On the login screen, paste a valid
+  activation key to unlock the subscription and set a new admin password. Lab data,
+  patients, and CBC/analyzer settings are never wiped. Also detects when an activation
+  key is pasted into the password field by mistake.
+
 ## v1.3.94
 
 - **Playwright end-to-end testing framework added.** Development dependency for future browser-based QA.

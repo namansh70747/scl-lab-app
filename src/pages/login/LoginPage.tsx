@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/session";
-import { login, setOwnPassword, listLoginAccounts, lockoutRemainingMs } from "@/lib/queries/auth";
+import { login, setOwnPassword, listLoginAccounts, lockoutRemainingMs, recoverAdminWithLicenseKey } from "@/lib/queries/auth";
 import { validatePassword, MIN_PASSWORD_LEN } from "@/lib/password";
 import { invoke, isTauri } from "@/lib/tauri";
 import { User } from "@/types";
@@ -11,8 +11,14 @@ import {
   Eye, EyeOff, Lock, ShieldCheck, Zap, Database, Loader2,
   ArrowRight, AlertCircle, CheckCircle2, UserRound, Building2, KeyRound,
 } from "lucide-react";
-import { NamAstaMark, NamAstaWordmark } from "@/components/common/NamAstaLogo";
+import { NamAstaWordmark } from "@/components/common/NamAstaLogo";
 import { getAllSettings } from "@/lib/queries/settings";
+
+/** Activation keys look like base64url.payload.base64url.sig — never a normal password. */
+function looksLikeLicenseKey(value: string): boolean {
+  const t = value.replace(/\s+/g, "");
+  return t.length >= 80 && t.includes(".") && /^[A-Za-z0-9._=-]+$/.test(t);
+}
 
 export function LoginPage() {
   const [username, setUsername] = useState("");
@@ -27,6 +33,10 @@ export function LoginPage() {
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
   const [showNewPw, setShowNewPw] = useState(false);
+
+  // offline recovery: paste activation key → reset admin password
+  const [recoverOpen, setRecoverOpen] = useState(false);
+  const [recoverKey, setRecoverKey] = useState("");
 
   const [lockSeconds, setLockSeconds] = useState(0);
 
@@ -104,7 +114,28 @@ export function LoginPage() {
     }
   }
 
+  async function handleRecover(e: React.FormEvent) {
+    e.preventDefault();
+    if (loading || !recoverKey.trim()) return;
+    setError("");
+    setLoading(true);
+    try {
+      const user = await recoverAdminWithLicenseKey(recoverKey, username.trim() || undefined);
+      setRecoverOpen(false);
+      setRecoverKey("");
+      setPassword("");
+      setUsername(user.username);
+      setUsernameTouched(true);
+      setPendingUser(user);
+    } catch (err) {
+      setError(friendly(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const pwMatch = confirmPw.length > 0 && newPw === confirmPw;
+  const keyInPassword = looksLikeLicenseKey(password);
 
   return (
     <div className="relative min-h-screen w-full grid lg:grid-cols-2 text-white"
@@ -158,6 +189,7 @@ export function LoginPage() {
               <h2 className="text-2xl font-bold text-white">Welcome back</h2>
               <p className="text-sm text-white/45 mt-1 mb-7">Sign in to continue to the lab dashboard.</p>
 
+              {!recoverOpen ? (
               <form onSubmit={handleLogin} className="space-y-5">
                 <Labeled label="Username">
                   <input
@@ -192,16 +224,70 @@ export function LoginPage() {
                       className="login-input pr-11" />
                     <ToggleEye shown={showPw} onClick={() => setShowPw(v => !v)} />
                   </div>
+                  {keyInPassword && (
+                    <p className="mt-2 text-[12px] text-amber-200/90 leading-relaxed">
+                      That looks like an <b>activation key</b>, not a password.{" "}
+                      <button type="button" className="underline underline-offset-2 hover:text-amber-100"
+                        onClick={() => { setRecoverKey(password.replace(/\s+/g, "")); setPassword(""); setRecoverOpen(true); setError(""); }}>
+                        Use Recover with key
+                      </button>
+                      {" "}instead.
+                    </p>
+                  )}
                 </Labeled>
 
                 {error && <ErrorBox msg={error} />}
 
-                <button type="submit" disabled={loading || lockSeconds > 0} className="login-btn">
+                <button type="submit" disabled={loading || lockSeconds > 0 || keyInPassword} className="login-btn">
                   {loading ? <Loader2 size={18} className="animate-spin" />
                     : lockSeconds > 0 ? `Try again in ${lockSeconds}s`
                     : <>Sign in <ArrowRight size={17} /></>}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setRecoverOpen(true); setError(""); }}
+                  className="w-full text-center text-[13px] text-white/45 hover:text-white/75 transition-colors"
+                >
+                  Forgot password? Recover with activation key
+                </button>
               </form>
+              ) : (
+              <form onSubmit={handleRecover} className="space-y-5">
+                <button
+                  type="button"
+                  onClick={() => { setRecoverOpen(false); setRecoverKey(""); setError(""); }}
+                  className="flex items-center gap-1.5 text-[12px] text-white/40 hover:text-white/70 transition-colors -mt-1"
+                >
+                  <ArrowRight size={13} className="rotate-180" /> Back to sign in
+                </button>
+                <div className="flex items-center gap-2 text-[#c7cbff] mb-1">
+                  <KeyRound size={18} /> <span className="text-sm font-semibold uppercase tracking-wide">Recover access</span>
+                </div>
+                <p className="text-sm text-white/45 leading-relaxed">
+                  Paste your NamAsta <b className="text-white/80">activation key</b>. This unlocks the subscription
+                  and lets you set a new password for{" "}
+                  <span className="font-medium text-white/80">{username.trim() || "admin"}</span>.
+                  Lab data and machine settings are not changed.
+                </p>
+                <Labeled label="Activation key">
+                  <div className="relative">
+                    <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+                    <input
+                      value={recoverKey}
+                      onChange={e => { setRecoverKey(e.target.value); setError(""); }}
+                      autoFocus spellCheck={false}
+                      placeholder="Paste activation key"
+                      className="login-input !pl-9 font-mono text-[12.5px]"
+                    />
+                  </div>
+                </Labeled>
+                {error && <ErrorBox msg={error} />}
+                <button type="submit" disabled={loading || !recoverKey.trim()} className="login-btn">
+                  {loading ? <Loader2 size={18} className="animate-spin" /> : <><ShieldCheck size={17} /> Unlock &amp; set new password</>}
+                </button>
+              </form>
+              )}
 
               {/* Entry to the pay/activate + setup wizard. Always reachable.
                   • Fresh install (no setup yet) → prominent "Register your laboratory" CTA.

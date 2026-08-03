@@ -2,6 +2,10 @@ import { dbQuery, dbExecute } from '@/lib/db';
 import { User } from '@/types';
 import { hashPassword, verifyPassword, isPlaceholderHash, validatePassword } from '@/lib/password';
 import { assertCan } from '@/lib/session';
+import { activateLicense } from '@/lib/license';
+
+/** Seeded placeholder — login accepts any password once and forces a reset. */
+const PLACEHOLDER_HASH = '$argon2id$placeholder$changeme';
 
 // ── Login lockout (in-memory; single-PC app) ──
 // Gentle, not punishing: a short cooldown after several wrong tries against an
@@ -122,6 +126,38 @@ export async function adminResetPassword(userId: number, newPassword: string): P
     'UPDATE users SET password_hash=?,force_password_change=1,updated_at=CURRENT_TIMESTAMP WHERE id=?',
     [hash, userId]
   );
+}
+
+/**
+ * Offline recovery for a locked-out lab: a valid activation key both (re)activates the
+ * licence and resets the chosen admin to the first-run placeholder so they can set a
+ * new password. Patients, CBC/analyzer settings, and all other data are untouched.
+ */
+export async function recoverAdminWithLicenseKey(
+  key: string,
+  username?: string
+): Promise<User> {
+  await activateLicense(key);
+
+  let user: User | null = null;
+  const wanted = username?.trim();
+  if (wanted) user = await getUserByUsername(wanted);
+  if (!user) {
+    const admins = await dbQuery<User>(
+      "SELECT * FROM users WHERE role='admin' AND active=1 ORDER BY id LIMIT 1"
+    );
+    user = admins[0] ?? null;
+  }
+  if (!user) {
+    throw new Error('No active admin account found to recover. Contact NamAsta.');
+  }
+
+  await dbExecute(
+    `UPDATE users SET password_hash=?, force_password_change=1, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+    [PLACEHOLDER_HASH, user.id]
+  );
+  clearFails(user.username);
+  return { ...user, password_hash: PLACEHOLDER_HASH, force_password_change: 1 };
 }
 
 async function activeAdminCount(): Promise<number> {
