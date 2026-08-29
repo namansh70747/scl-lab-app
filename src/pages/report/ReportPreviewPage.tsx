@@ -47,9 +47,12 @@ function esc(s: string): string {
  * duplicate tests the lab orders when it wants a single combined BIOCHEMISTRY section.
  */
 const DEPARTMENT: Record<string, string> = {
-  HEM: 'HAEMATOLOGY', CBC: 'CBC', DLCP: 'HAEMATOLOGY', COAG: 'HAEMATOLOGY',
-  BIO: 'BIOCHEMISTRY',
-  SERO: 'SEROLOGY', SALP: 'SEROLOGY',
+  HEM: 'HAEMATOLOGY', CBC: 'CBC', DLCP: 'HAEMATOLOGY', COAG: 'HAEMATOLOGY', PTI: 'HAEMATOLOGY',
+  BIO: 'BIOCHEMISTRY', BILI2: 'BIOCHEMISTRY',
+  // The standalone bilirubin combo prints under the LFT heading — the string must match the LFT
+  // panel's own report_heading so an order carrying both merges under one department title.
+  BILI1: 'LIVER FUNCTION TEST (LFT)',
+  SERO: 'SEROLOGY', SALP: 'SEROLOGY', WIDALP: 'SEROLOGY', DENGP: 'SEROLOGY',
   URINE: 'CLINICAL PATHOLOGY', STOOL: 'CLINICAL PATHOLOGY', SEMEN: 'CLINICAL PATHOLOGY', FLUID: 'CLINICAL PATHOLOGY',
   MICRO: 'MICROBIOLOGY',
   MISC: 'MISCELLANEOUS',

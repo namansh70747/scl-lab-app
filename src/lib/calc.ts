@@ -6,6 +6,7 @@ export type ResultMap = Record<string, number | string | null>;
 /** Codes hardwired in the switch — editing their `formula` column has no effect on computation. */
 export const BUILTIN_CALC_CODES = new Set([
   'BBI', 'GLO', 'BAG', 'BBI1', 'GLO1', 'BAG1',
+  'BIL1_I', 'BIL2_I',
   'BVLDL', 'NHDL', 'BLDL', 'BRAT', 'BLHR',
   'EAG', 'BUN', 'INR', 'GFR', 'GFR_CAT',
 ]);
@@ -108,6 +109,18 @@ export function computeCalculated(code: string, formula: string, values: ResultM
       return tpn - alb;
     }
     case 'BAG1': return safeDiv(g('ALB1'), g('GLO1'));
+    // Standalone "Bilirubin (Total, Direct & Indirect)" combo panels — BIL1_* reports under the
+    // LFT heading, BIL2_* under BIOCHEMISTRY. Indirect is clamped at 0 exactly like BBI/BBI1.
+    case 'BIL1_I': {
+      const bbt = g('BIL1_T'), bbd = g('BIL1_D');
+      if (bbt == null || bbd == null) return null;
+      return Math.max(0, bbt - bbd);
+    }
+    case 'BIL2_I': {
+      const bbt = g('BIL2_T'), bbd = g('BIL2_D');
+      if (bbt == null || bbd == null) return null;
+      return Math.max(0, bbt - bbd);
+    }
     case 'BVLDL': {
       const tg = g('TG');
       return tg != null ? tg / 5 : null;
@@ -137,9 +150,20 @@ export function computeCalculated(code: string, formula: string, values: ResultM
       return urea != null ? urea * 0.467 : null;
     }
     case 'INR': {
-      // INR = PT_patient / PT_control (control ≈ 12s), simplified
-      const pt = g('PT_PT');
-      return pt != null ? pt / 12.0 : null;
+      // INR = (PT patient / PT control) ^ ISI — the WHO/ICSH definition. The exponent is the
+      // reagent's International Sensitivity Index, so a lab whose thromboplastin is not ISI 1.0
+      // gets a materially different INR; ignoring it (the old PT/12 shortcut) reported the plain
+      // ratio against a fixed 12 s control and was wrong on both counts.
+      //
+      // Inputs come from the PT/INR panel (PTIT patient, PTICT control, ISI reagent index). The
+      // legacy standalone coagulation test PT_PT has no control or ISI line of its own, so it
+      // keeps its historical assumptions (12 s control, ISI 1) and its value is unchanged.
+      const pt = g('PTIT') ?? g('PT_PT');
+      const control = g('PTICT') ?? 12.0;
+      const isi = g('ISI') ?? 1.0;
+      if (pt == null || pt <= 0 || control <= 0) return null;
+      const inr = Math.pow(pt / control, isi);
+      return isFinite(inr) ? inr : null;
     }
     case 'GFR': {
       // CKD-EPI 2021 — needs serum creatinine (CRT) + patient age + sex.

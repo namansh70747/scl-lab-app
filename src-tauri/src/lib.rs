@@ -317,6 +317,12 @@ pub fn run() {
             sql: include_str!("../migrations/0052_stool_semen_panels.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 53,
+            description: "ptinr_bilirubin_widal_dengue_panels",
+            sql: include_str!("../migrations/0053_ptinr_bilirubin_widal_dengue_panels.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut builder = tauri::Builder::default()

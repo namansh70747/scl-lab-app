@@ -2,6 +2,31 @@
 
 All notable changes to NamAsta Diagnostics. Newest first.
 
+## v1.3.96
+
+- **Corrected INR calculation.** INR is now computed the standard way —
+  **INR = (Patient PT ÷ Control PT) ^ ISI** — using the panel's own control time and the
+  reagent's ISI. Previously it divided the PT by a fixed 12 seconds and ignored the ISI
+  entirely, which reported the wrong INR on every kit whose ISI is not 1.0. Existing
+  standalone "Prothrombin Time (PT)" results are unchanged.
+- **New "Prothrombin Time (PT / INR)" panel** for every lab: Prothrombin Time, Control,
+  ISI, Ratio, Index and INR. Ratio and Index calculate automatically
+  (Ratio = PT ÷ Control, Index = Control ÷ PT × 100). Orderable as one profile that
+  expands into all six lines; prints under HAEMATOLOGY.
+- **New "Bilirubin (Total, Direct & Indirect)" combo panels.** Available in two versions so
+  the same combo can print under either heading — one reports under **LIVER FUNCTION TEST
+  (LFT)** and one under **BIOCHEMISTRY**. Indirect bilirubin is calculated automatically.
+  The bilirubin lines already inside the LFT and Biochemistry profiles are unchanged.
+- **New "Widal Slide Method" panel** — the slide result plus the four titres
+  (S. Typhi "O" / "H", S. Paratyphi "AH" / "BH") as one orderable profile with its own
+  report heading. The old single free-text "Widal Test" is hidden from new orders; it can
+  be switched back on in Test Master, and past reports are untouched.
+- **New "Dengue Serology" panel** — NS1 Antigen, IgM and IgG antibodies grouped into one
+  orderable profile under a "DENGUE SEROLOGY" heading, keeping their interpretation notes.
+- Panels a lab had already built by hand with these codes are repaired in place: names and
+  prices are kept, only the wiring and formulas are corrected. No patient, result, billing
+  or CBC/analyzer setting is touched.
+
 ## v1.3.95
 
 - **Forgot password recovery with activation key.** On the login screen, paste a valid

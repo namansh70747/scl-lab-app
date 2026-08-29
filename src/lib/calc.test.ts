@@ -165,12 +165,76 @@ describe('computeCalculated', () => {
     });
   });
 
-  describe('INR = PT_PT / 12', () => {
-    it('computes', () => {
+  describe('INR = (PTIT / PTICT) ^ ISI', () => {
+    it('applies the ISI exponent to the patient/control ratio', () => {
+      // ratio 1.5, ISI 1.2 → 1.5^1.2 = 1.6198…
+      expect(calc('INR', { PTIT: 18, PTICT: 12, ISI: 1.2 })).toBeCloseTo(Math.pow(1.5, 1.2), 6);
+    });
+    it('equals the plain ratio when ISI is 1', () => {
+      expect(calc('INR', { PTIT: 18, PTICT: 12, ISI: 1 })).toBeCloseTo(1.5);
+    });
+    it('defaults ISI to 1 when the reagent index is not entered', () => {
+      expect(calc('INR', { PTIT: 18, PTICT: 12 })).toBeCloseTo(1.5);
+    });
+    it('a higher ISI moves the INR further from 1 than the raw ratio', () => {
+      const ratio = 18 / 12;
+      const inr = calc('INR', { PTIT: 18, PTICT: 12, ISI: 1.6 }) as number;
+      expect(inr).toBeGreaterThan(ratio);
+    });
+    it('normal PT against its control gives an INR near 1', () => {
+      const inr = calc('INR', { PTIT: 13, PTICT: 13, ISI: 1.35 }) as number;
+      expect(inr).toBeCloseTo(1.0);
+    });
+    // The standalone legacy coagulation test has no control/ISI line — its value must not move.
+    it('keeps the legacy PT_PT / 12 behaviour when only PT_PT is present', () => {
       expect(calc('INR', { PT_PT: 24 })).toBeCloseTo(2.0);
     });
-    it('returns null when PT_PT missing', () => {
+    it('prefers the PT/INR panel value over the legacy PT_PT when both exist', () => {
+      expect(calc('INR', { PTIT: 12, PTICT: 12, PT_PT: 24 })).toBeCloseTo(1.0);
+    });
+    it('returns null when no prothrombin time is available', () => {
       expect(calc('INR', {})).toBeNull();
+      expect(calc('INR', { PTICT: 12, ISI: 1.2 })).toBeNull();
+    });
+    it('returns null (never NaN/Infinity) on a zero or negative control', () => {
+      for (const control of [0, -12]) {
+        const v = calc('INR', { PTIT: 18, PTICT: control, ISI: 1.2 });
+        expect(v).toBeNull();
+        expect(Number.isNaN(v as number)).toBe(false);
+      }
+    });
+  });
+
+  // The PT/INR panel's Ratio and Index lines are plain stored formulas (not hardwired), so they
+  // run through the generic evaluator exactly as the migration ships them.
+  describe('PT/INR panel Ratio and Index formulas', () => {
+    it('Ratio = PTIT / PTICT', () => {
+      expect(computeCalculated('RATIO', 'PTIT / PTICT', { PTIT: 18, PTICT: 12 })).toBeCloseTo(1.5);
+    });
+    it('Index = PTICT / PTIT * 100 (percent)', () => {
+      expect(computeCalculated('INDEX', 'PTICT / PTIT * 100', { PTIT: 15, PTICT: 12 })).toBeCloseTo(80);
+    });
+    it('both blank out when the control is missing', () => {
+      expect(computeCalculated('RATIO', 'PTIT / PTICT', { PTIT: 18 })).toBeNull();
+      expect(computeCalculated('INDEX', 'PTICT / PTIT * 100', { PTIT: 18 })).toBeNull();
+    });
+  });
+
+  // Standalone bilirubin combo panels: BIL1_* prints under LFT, BIL2_* under BIOCHEMISTRY.
+  describe('bilirubin combo panels', () => {
+    it('BIL1_I = max(0, BIL1_T - BIL1_D)', () => {
+      expect(calc('BIL1_I', { BIL1_T: 1.2, BIL1_D: 0.3 })).toBeCloseTo(0.9);
+      expect(calc('BIL1_I', { BIL1_T: 0.3, BIL1_D: 1.0 })).toBe(0);
+      expect(calc('BIL1_I', { BIL1_T: 1.2 })).toBeNull();
+    });
+    it('BIL2_I = max(0, BIL2_T - BIL2_D)', () => {
+      expect(calc('BIL2_I', { BIL2_T: 2.4, BIL2_D: 0.8 })).toBeCloseTo(1.6);
+      expect(calc('BIL2_I', { BIL2_T: 0.2, BIL2_D: 0.9 })).toBe(0);
+      expect(calc('BIL2_I', { BIL2_D: 0.8 })).toBeNull();
+    });
+    it('the two combos never read each other\'s inputs', () => {
+      expect(calc('BIL1_I', { BIL2_T: 1.2, BIL2_D: 0.3 })).toBeNull();
+      expect(calc('BIL2_I', { BIL1_T: 1.2, BIL1_D: 0.3 })).toBeNull();
     });
   });
 
