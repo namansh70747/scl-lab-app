@@ -1,0 +1,59 @@
+name: Mac test build (DMG)
+
+# Builds an Apple Silicon .dmg for local testing on a Mac.
+#
+# Deliberately SEPARATE from release.yml and run only on demand. It uploads the DMG as a
+# workflow artifact and never creates or edits a GitHub Release, so it cannot touch the
+# installed Windows apps' update feed (`latest.json`) that release.yml publishes.
+#
+# The app is not code-signed or notarised, so macOS Gatekeeper will refuse the first launch:
+# right-click the app in Applications and choose Open, then confirm.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    env:
+      CARGO_HTTP_MULTIPLEXING: 'false'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+      CARGO_NET_RETRY: '5'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      # tauri.conf.json pins bundle.targets to "nsis" (Windows) and turns on updater
+      # artifacts, so both are overridden here: --bundles dmg produces the Mac installer, and
+      # createUpdaterArtifacts=false avoids needing the release signing key for a test build.
+      - name: Build DMG
+        run: >
+          npm run tauri -- build
+          --target aarch64-apple-darwin
+          --bundles dmg
+          --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: NamAsta-Diagnostics-mac-arm64-dmg
+          path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          if-no-files-found: error
